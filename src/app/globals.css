@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand-primary: #1e3a5f;
+  --brand-primary-light: #2a5a8f;
+  --brand-primary-dark: #152a45;
+  --brand-accent: #3b82f6;
+  --brand-success: #10b981;
+  --brand-warning: #f59e0b;
+}
+
+/* Accessibility: Skip Link */
+.a11y-skip-link {
+  @apply absolute -top-full left-0 z-[99999] px-6 py-3 text-base font-semibold no-underline rounded-br transition-all duration-100;
+  background: var(--brand-primary);
+  color: #ffffff !important;
+}
+
+.a11y-skip-link:focus {
+  @apply top-0;
+}
+
+/* Accessibility: Touch Targets */
+nav a,
+nav button,
+header a,
+header button {
+  @apply min-h-[44px] min-w-[44px] inline-flex items-center justify-center;
+}
+
+footer a,
+footer button {
+  @apply min-h-[44px] py-3 inline-flex items-center;
+}
+
+/* RTL Support */
+[dir="rtl"] .text-left {
+  text-align: right;
+}
+
+[dir="rtl"] .text-right {
+  text-align: left;
+}
+
+/* Footer Text Contrast Fix */
+.footer-section p,
+.footer-section span,
+.footer-section a {
+  color: #b8c8d8 !important;
+}
+
+/* Smooth Scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Selection Color */
+::selection {
+  background-color: rgba(30, 58, 95, 0.2);
+}
+
+/* Focus Visible Styles */
+:focus-visible {
+  @apply outline-2 outline-offset-2;
+  outline-color: var(--brand-primary);
+}
+
+/* Gradient Background Utility */
+.bg-brand-gradient {
+  background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary-light) 100%);
+}
+
+.bg-brand-gradient-subtle {
+  background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+}
+
+/* Card hover effect */
+.card-hover {
+  @apply transition-all duration-300;
+}
+
+.card-hover:hover {
+  @apply -translate-y-1 shadow-xl;
+}
