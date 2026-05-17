@@ -1,3 +1,5 @@
+import { withSentryConfig } from "@sentry/nextjs";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -18,7 +20,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: blob: https:",
               "font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com",
-              "connect-src 'self' https: https://dev-4arqc0dzmbim7yn5.us.auth0.com",
+              "connect-src 'self' https: https://dev-4arqc0dzmbim7yn5.us.auth0.com https://*.sentry.io",
               "frame-src 'self' https://challenges.cloudflare.com https://dev-4arqc0dzmbim7yn5.us.auth0.com",
               "object-src 'none'",
               "base-uri 'self'",
@@ -78,4 +80,20 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  org: "daribati",
+  project: "daribati-nextjs",
+  silent: !process.env.CI,
+  widenClientFileUpload: true,
+  tunnelRoute: "/monitoring",
+  hideSourceMaps: true,
+  webpack: {
+    reactComponentAnnotation: {
+      enabled: true,
+    },
+    treeshake: {
+      removeDebugLogging: true,
+    },
+    automaticVercelMonitors: true,
+  },
+});
