@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { logError, getErrors, getErrorStats } from "@/lib/error-tracker";
 
+export const runtime = 'edge';
 export const dynamic = "force-dynamic";
 
 // POST: Report a new error from the client

@@ -3,6 +3,8 @@ import { auth0 } from "@/lib/auth0";
 import type { Metadata } from "next";
 import { BRAND_COLOR, SITE_NAME_AR } from "@/lib/constants";
 
+export const runtime = 'edge';
+
 export const metadata: Metadata = {
   title: "لوحة التحكم",
   description: "لوحة تحكم ضريبتي — إدارة الضرائب والفواتير",

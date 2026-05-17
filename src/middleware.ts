@@ -2,9 +2,6 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { auth0 } from "@/lib/auth0";
 
-// Use Node.js runtime for middleware so Auth0 SDK can access Node.js APIs
-export const runtime = "nodejs";
-
 export async function middleware(request: NextRequest) {
   const url = request.nextUrl.clone();
   const hostname = request.headers.get("host") || "";

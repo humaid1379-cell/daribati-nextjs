@@ -4,8 +4,10 @@ import { withSentryConfig } from "@sentry/nextjs";
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  // Treat Auth0 SDK as a server-side external package to avoid Edge Runtime bundling issues
-  serverExternalPackages: ["@auth0/nextjs-auth0"],
+  experimental: {
+    // Treat Auth0 SDK as a server-side external package to avoid Edge Runtime bundling issues
+    serverComponentsExternalPackages: ["@auth0/nextjs-auth0"],
+  },
 
   async headers() {
     return [
@@ -20,8 +22,8 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: blob: https:",
               "font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com",
-              "connect-src 'self' https: https://dev-4arqc0dzmbim7yn5.us.auth0.com https://*.sentry.io",
-              "frame-src 'self' https://challenges.cloudflare.com https://dev-4arqc0dzmbim7yn5.us.auth0.com",
+              "connect-src 'self' https: https://dev-4arqc0dzmbim7yn5.eu.auth0.com https://*.sentry.io",
+              "frame-src 'self' https://challenges.cloudflare.com https://dev-4arqc0dzmbim7yn5.eu.auth0.com",
               "object-src 'none'",
               "base-uri 'self'",
             ].join("; "),
