@@ -30,6 +30,26 @@ export async function middleware(request: NextRequest) {
     "max-age=31536000; includeSubDomains"
   );
   response.headers.set("X-XSS-Protection", "1; mode=block");
+  
+  // Add CSP and Permissions-Policy to dynamic pages
+  const csp = [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://plausible.io https://static.cloudflareinsights.com",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "img-src 'self' data: blob: https:",
+    "font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com",
+    "connect-src 'self' https: https://dev-4arqc0dzmbim7yn5.eu.auth0.com https://*.sentry.io",
+    "frame-src 'self' https://challenges.cloudflare.com https://dev-4arqc0dzmbim7yn5.eu.auth0.com",
+    "object-src 'none'",
+    "base-uri 'self'",
+  ].join("; ");
+  response.headers.set("Content-Security-Policy", csp);
+  
+  response.headers.set(
+    "Permissions-Policy",
+    "camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()"
+  );
+  
   response.headers.delete("X-Powered-By");
 
   return response;
