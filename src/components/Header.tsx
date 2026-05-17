@@ -5,7 +5,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NAV_LINKS, BRAND_COLOR } from "@/lib/constants";
 
-export default function Header() {
+export default function Header({
+  authSlot,
+}: {
+  authSlot?: React.ReactNode;
+}) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
 
@@ -61,13 +65,19 @@ export default function Header() {
                 {link.labelAr}
               </Link>
             ))}
-            <Link
-              href="/dashboard/"
-              className="mr-4 px-5 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90"
-              style={{ backgroundColor: BRAND_COLOR }}
-            >
-              لوحة التحكم
-            </Link>
+          </div>
+
+          {/* Auth Slot: login/logout buttons injected from server layout */}
+          <div className="hidden md:flex items-center gap-2">
+            {authSlot ?? (
+              <Link
+                href="/dashboard"
+                className="px-5 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90"
+                style={{ backgroundColor: BRAND_COLOR }}
+              >
+                لوحة التحكم
+              </Link>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -122,14 +132,24 @@ export default function Header() {
                   {link.labelAr}
                 </Link>
               ))}
-              <Link
-                href="/dashboard/"
-                className="mx-4 mt-2 px-5 py-3 rounded-lg text-sm font-semibold text-white text-center transition-all hover:opacity-90"
-                style={{ backgroundColor: BRAND_COLOR }}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                لوحة التحكم
-              </Link>
+              {/* Mobile auth links */}
+              <div className="mx-4 mt-2 flex flex-col gap-2">
+                <a
+                  href="/auth/login"
+                  className="px-5 py-3 rounded-lg text-sm font-medium text-gray-700 text-center border border-gray-200 hover:bg-gray-50 transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  تسجيل الدخول
+                </a>
+                <a
+                  href="/auth/login?screen_hint=signup"
+                  className="px-5 py-3 rounded-lg text-sm font-semibold text-white text-center transition-all hover:opacity-90"
+                  style={{ backgroundColor: BRAND_COLOR }}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  إنشاء حساب
+                </a>
+              </div>
             </div>
           </div>
         )}

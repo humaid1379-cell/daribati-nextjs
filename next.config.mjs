@@ -2,6 +2,8 @@
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Treat Auth0 SDK as a server-side external package to avoid Edge Runtime bundling issues
+  serverExternalPackages: ["@auth0/nextjs-auth0"],
 
   async headers() {
     return [
@@ -16,8 +18,8 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: blob: https:",
               "font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com",
-              "connect-src 'self' https:",
-              "frame-src 'self' https://challenges.cloudflare.com",
+              "connect-src 'self' https: https://dev-4arqc0dzmbim7yn5.us.auth0.com",
+              "frame-src 'self' https://challenges.cloudflare.com https://dev-4arqc0dzmbim7yn5.us.auth0.com",
               "object-src 'none'",
               "base-uri 'self'",
             ].join("; "),
@@ -64,7 +66,12 @@ const nextConfig = {
     return [
       {
         source: "/login",
-        destination: "/dashboard/",
+        destination: "/auth/login",
+        permanent: false,
+      },
+      {
+        source: "/logout",
+        destination: "/auth/logout",
         permanent: false,
       },
     ];

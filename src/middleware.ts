@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { auth0 } from "@/lib/auth0";
 
-export function middleware(request: NextRequest) {
+// Use Node.js runtime for middleware so Auth0 SDK can access Node.js APIs
+export const runtime = "nodejs";
+
+export async function middleware(request: NextRequest) {
   const url = request.nextUrl.clone();
   const hostname = request.headers.get("host") || "";
 
@@ -17,7 +21,8 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(url, 301);
   }
 
-  const response = NextResponse.next();
+  // Delegate Auth0 authentication routes and session management to the SDK
+  const response = await auth0.middleware(request);
 
   // Add security headers to every response
   response.headers.set("X-Frame-Options", "DENY");
@@ -39,9 +44,9 @@ export const config = {
      * Match all request paths except:
      * - _next/static (static files)
      * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
+     * - favicon.ico, sitemap.xml, robots.txt (metadata files)
+     * - public folder static assets
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

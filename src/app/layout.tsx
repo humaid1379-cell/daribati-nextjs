@@ -5,6 +5,7 @@ import { SITE_TITLE, SITE_DESCRIPTION, SITE_URL, BRAND_COLOR } from "@/lib/const
 import { getSoftwareApplicationJsonLd, getOrganizationJsonLd } from "@/lib/jsonld";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import AuthButton from "@/components/AuthButton";
 
 const ibmPlexSansArabic = IBM_Plex_Sans_Arabic({
   subsets: ["arabic", "latin"],
@@ -75,7 +76,12 @@ export default function RootLayout({
           تخطي إلى المحتوى الرئيسي
         </a>
 
-        <Header />
+        {/*
+          AuthButton is a Server Component that reads the Auth0 session.
+          It is passed as a slot to the Header (Client Component) so that
+          session-aware login/logout buttons are rendered server-side.
+        */}
+        <Header authSlot={<AuthButton />} />
 
         <main id="main-content" role="main">
           {children}
