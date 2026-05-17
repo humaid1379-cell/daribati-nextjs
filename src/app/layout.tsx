@@ -8,6 +8,7 @@ import { getSoftwareApplicationJsonLd, getOrganizationJsonLd } from "@/lib/jsonl
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import AuthButton from "@/components/AuthButton";
+import CookieNotice from "@/components/CookieNotice";
 
 const ibmPlexSansArabic = IBM_Plex_Sans_Arabic({
   subsets: ["arabic", "latin"],
@@ -90,6 +91,7 @@ export default function RootLayout({
         </main>
 
         <Footer />
+        <CookieNotice />
       </body>
     </html>
   );

@@ -116,6 +116,15 @@ export default function PricingPage() {
                   ))}
                 </ul>
 
+                {plan.id === "enterprise" ? (
+                <a
+                  href="mailto:admin@daribati.ae"
+                  className="block w-full py-3 px-6 rounded-xl text-center font-semibold transition-all border-2 hover:bg-gray-50"
+                  style={{ borderColor: BRAND_COLOR, color: BRAND_COLOR }}
+                >
+                  تواصل معنا
+                </a>
+              ) : (
                 <Link
                   href="/dashboard/"
                   className={`block w-full py-3 px-6 rounded-xl text-center font-semibold transition-all ${
@@ -131,6 +140,7 @@ export default function PricingPage() {
                 >
                   ابدأ الآن
                 </Link>
+              )}
               </div>
             ))}
           </div>
