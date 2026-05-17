@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import { BRAND_COLOR } from "@/lib/constants";
 
 export default function Loading() {
