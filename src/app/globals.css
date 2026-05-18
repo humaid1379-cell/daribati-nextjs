@@ -7,8 +7,13 @@
   --brand-primary-light: #2a5a8f;
   --brand-primary-dark: #152a45;
   --brand-accent: #3b82f6;
+  --brand-gold: #c9a227;
+  --brand-gold-light: #d4b44a;
+  --brand-blue-secondary: #4a90d9;
   --brand-success: #10b981;
   --brand-warning: #f59e0b;
+  --bg-warm: #faf8f5;
+  --bg-warm-alt: #f5f2ed;
 }
 
 /* Accessibility: Skip Link */
@@ -73,7 +78,29 @@ html {
 }
 
 .bg-brand-gradient-subtle {
-  background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+  background: linear-gradient(135deg, #faf8f5 0%, #f0f4f8 100%);
+}
+
+.bg-brand-gradient-gold {
+  background: linear-gradient(135deg, var(--brand-primary) 0%, #2a4a6f 50%, var(--brand-primary-light) 100%);
+}
+
+/* Warm background utility */
+.bg-warm {
+  background-color: var(--bg-warm);
+}
+
+.bg-warm-alt {
+  background-color: var(--bg-warm-alt);
+}
+
+/* Gold accent utilities */
+.border-gold {
+  border-color: var(--brand-gold);
+}
+
+.text-gold {
+  color: var(--brand-gold);
 }
 
 /* Card hover effect */

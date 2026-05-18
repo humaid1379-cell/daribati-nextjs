@@ -4,6 +4,9 @@ export const SITE_NAME_EN = "Daribati";
 export const SITE_TITLE = "ضريبتي — Daribati";
 export const BRAND_COLOR = "#1e3a5f";
 export const BRAND_COLOR_LIGHT = "#2a5a8f";
+export const BRAND_GOLD = "#c9a227";
+export const BRAND_GOLD_LIGHT = "#d4b44a";
+export const BRAND_BLUE_SECONDARY = "#4a90d9";
 
 export const SITE_DESCRIPTION =
   "UAE Tax + Billing SaaS platform for businesses, SMEs, and free zone companies. Automate VAT and Corporate Tax compliance with smart CSV import, FTA-compliant invoicing, and Arabic-first dashboard.";

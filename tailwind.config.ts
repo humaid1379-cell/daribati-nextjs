@@ -14,6 +14,9 @@ const config: Config = {
           light: "#2a5a8f",
           dark: "#152a45",
           accent: "#3b82f6",
+          gold: "#c9a227",
+          "gold-light": "#d4b44a",
+          "blue-secondary": "#4a90d9",
         },
       },
       fontFamily: {

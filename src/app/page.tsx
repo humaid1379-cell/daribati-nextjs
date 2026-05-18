@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { SITE_URL, SITE_DESCRIPTION_AR, BRAND_COLOR } from "@/lib/constants";
+import { SITE_URL, SITE_DESCRIPTION_AR, BRAND_COLOR, BRAND_GOLD } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: "ضريبتي — Daribati | منصة الضرائب والفوترة في الإمارات",
@@ -98,7 +98,7 @@ export default function HomePage() {
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
               منصة الضرائب والفوترة
               <br />
-              <span className="text-blue-300">المتكاملة في الإمارات</span>
+              <span style={{ color: "#e8c94a" }}>المتكاملة في الإمارات</span>
             </h1>
             <p className="text-lg sm:text-xl text-blue-100 max-w-2xl mx-auto mb-10 leading-relaxed">
               أتمتة الامتثال لضريبة القيمة المضافة وضريبة الشركات مع فواتير
@@ -143,7 +143,7 @@ export default function HomePage() {
       </section>
 
       {/* Features Section */}
-      <section className="bg-gray-50 py-20" aria-label="مميزات المنصة">
+      <section className="py-20" style={{ background: "linear-gradient(180deg, #faf8f5 0%, #f5f2ed 100%)" }} aria-label="مميزات المنصة">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
@@ -162,7 +162,7 @@ export default function HomePage() {
               >
                 <div
                   className="w-14 h-14 rounded-xl flex items-center justify-center mb-5"
-                  style={{ backgroundColor: `${BRAND_COLOR}10`, color: BRAND_COLOR }}
+                  style={{ backgroundColor: "#f0ead6", color: BRAND_COLOR }}
                 >
                   {feature.icon}
                 </div>
@@ -208,7 +208,7 @@ export default function HomePage() {
               <div key={item.step} className="text-center">
                 <div
                   className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-white mx-auto mb-5"
-                  style={{ backgroundColor: BRAND_COLOR }}
+                  style={{ background: `linear-gradient(135deg, ${BRAND_COLOR} 0%, #4a90d9 100%)` }}
                 >
                   {item.step}
                 </div>
@@ -240,10 +240,10 @@ export default function HomePage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/pricing"
-              className="px-8 py-4 bg-white rounded-xl text-lg font-bold transition-all hover:bg-blue-50 hover:scale-105"
-              style={{ color: BRAND_COLOR }}
-            >
-              اختر باقتك وابدأ التجربة
+              className="px-8 py-4 rounded-xl text-lg font-bold transition-all hover:scale-105"
+                style={{ backgroundColor: BRAND_GOLD, color: "#ffffff" }}
+              >
+                اختر باقتك وابدأ التجربة
             </Link>
             <Link
               href="/calculator"

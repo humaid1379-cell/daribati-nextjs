@@ -107,7 +107,7 @@ export default function CompliancePage() {
       />
 
       {/* Hero */}
-      <section className="bg-gray-50 py-16 lg:py-20">
+      <section className="py-16 lg:py-20" style={{ background: "linear-gradient(135deg, #faf8f5 0%, #f0f4f8 100%)" }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
             دليل الامتثال الضريبي

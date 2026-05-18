@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { PRICING_PLANS, SITE_URL, BRAND_COLOR } from "@/lib/constants";
+import { PRICING_PLANS, SITE_URL, BRAND_COLOR, BRAND_GOLD } from "@/lib/constants";
 import { getWebPageJsonLd } from "@/lib/jsonld";
 
 export const metadata: Metadata = {
@@ -36,7 +36,7 @@ export default function PricingPage() {
       />
 
       {/* Hero */}
-      <section className="bg-gray-50 py-16 lg:py-20">
+      <section className="py-16 lg:py-20" style={{ background: "linear-gradient(135deg, #faf8f5 0%, #f0f4f8 100%)" }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
             باقات تناسب كل الأعمال
@@ -57,14 +57,15 @@ export default function PricingPage() {
                 key={plan.id}
                 className={`relative rounded-2xl p-8 border-2 transition-all ${
                   plan.popular
-                    ? "border-[#1e3a5f] shadow-xl scale-105"
-                    : "border-gray-200 shadow-sm hover:shadow-lg"
+                    ? "shadow-xl scale-105"
+                    : "border-gray-200 shadow-sm hover:shadow-lg hover:border-gray-300"
                 }`}
+                style={plan.popular ? { borderColor: BRAND_GOLD, background: "linear-gradient(180deg, #fffdf7 0%, #ffffff 100%)" } : {}}
               >
                 {plan.popular && (
                   <div
                     className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-sm font-semibold text-white"
-                    style={{ backgroundColor: BRAND_COLOR }}
+                    style={{ background: `linear-gradient(135deg, ${BRAND_GOLD} 0%, #d4b44a 100%)` }}
                   >
                     الأكثر شيوعاً
                   </div>
@@ -96,7 +97,7 @@ export default function PricingPage() {
                       <svg
                         className="w-5 h-5 mt-0.5 flex-shrink-0"
                         fill="none"
-                        stroke={BRAND_COLOR}
+                        stroke={plan.popular ? BRAND_GOLD : BRAND_COLOR}
                         viewBox="0 0 24 24"
                         aria-hidden="true"
                       >
@@ -144,7 +145,7 @@ export default function PricingPage() {
       </section>
 
       {/* FAQ */}
-      <section className="bg-gray-50 py-16" aria-label="الأسئلة الشائعة">
+      <section className="py-16" style={{ background: "linear-gradient(180deg, #faf8f5 0%, #f5f2ed 100%)" }} aria-label="الأسئلة الشائعة">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 text-center mb-12">
             الأسئلة الشائعة
