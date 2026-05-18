@@ -19,7 +19,6 @@ export const metadata: Metadata = {
 
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
-export const revalidate = 3600;
 
 export default function TermsPage() {
   const jsonLd = getWebPageJsonLd(
@@ -211,7 +210,7 @@ export default function TermsPage() {
             <div>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">القانون المعمول به</h2>
               <p>
-                تخضع هذه الشروط لقوانين الإمارات العربية المتحدة وتُفسر وفقاً لها. أي نزاع ينشأ عن هذه الشروط أو يتعلق بها يخضع للاختصاص الحصري لمحاكم الإمارات العربية المتحدة.
+                تخضع هذه الشروط لقوانين دولة الإمارات العربية المتحدة وتُفسر وفقاً لها، بما في ذلك المرسوم بقانون اتحادي رقم (45) لسنة 2021 بشأن حماية البيانات الشخصية. أي نزاع ينشأ عن هذه الشروط أو يتعلق بها يخضع للاختصاص الحصري لمحاكم دبي، الإمارات العربية المتحدة.
               </p>
             </div>
 
@@ -242,7 +241,7 @@ export default function TermsPage() {
                     admin@daribati.ae
                   </a>
                 </p>
-                <p className="mt-1">الإمارات العربية المتحدة</p>
+                <p className="mt-1">دبي، الإمارات العربية المتحدة</p>
               </div>
             </div>
 

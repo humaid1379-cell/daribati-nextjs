@@ -1,15 +1,16 @@
 import { redirect } from "next/navigation";
 import { auth0 } from "@/lib/auth0";
 import type { Metadata } from "next";
-import { BRAND_COLOR, SITE_NAME_AR, SITE_URL } from "@/lib/constants";
+import { BRAND_COLOR, SITE_NAME_AR } from "@/lib/constants";
 
 export const runtime = 'edge';
 
 export const metadata: Metadata = {
   title: "لوحة التحكم",
   description: "لوحة تحكم ضريبتي — إدارة الضرائب والفواتير",
-  alternates: {
-    canonical: `${SITE_URL}/dashboard`,
+  robots: {
+    index: false,
+    follow: false,
   },
 };
 
@@ -131,23 +132,25 @@ export default async function DashboardPage() {
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[
-              { label: "إنشاء فاتورة", icon: "➕", href: "#" },
-              { label: "استيراد CSV", icon: "📤", href: "#" },
-              { label: "تقرير ضريبي", icon: "📈", href: "#" },
-              { label: "الإعدادات", icon: "⚙️", href: "#" },
+              { label: "إنشاء فاتورة", icon: "➕" },
+              { label: "استيراد CSV", icon: "📤" },
+              { label: "تقرير ضريبي", icon: "📈" },
+              { label: "الإعدادات", icon: "⚙️" },
             ].map((action) => (
-              <a
+              <div
                 key={action.label}
-                href={action.href}
-                className="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-100 hover:border-blue-200 hover:bg-blue-50 transition-all group"
+                className="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-100 opacity-60 cursor-not-allowed"
+                aria-disabled="true"
+                title="قريباً"
               >
-                <span className="text-2xl group-hover:scale-110 transition-transform">
+                <span className="text-2xl">
                   {action.icon}
                 </span>
-                <span className="text-sm font-medium text-gray-700 group-hover:text-blue-700 text-center">
+                <span className="text-sm font-medium text-gray-700 text-center">
                   {action.label}
                 </span>
-              </a>
+                <span className="text-xs text-gray-400">قريباً</span>
+              </div>
             ))}
           </div>
         </div>

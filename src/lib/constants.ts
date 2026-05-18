@@ -18,6 +18,8 @@ export const FEATURES = [
   "Smart CSV Import",
   "Arabic-First Dashboard",
   "Free Zone Company Support",
+  "AI-Powered Transaction Classification",
+  "AI Tax Assistant",
 ];
 
 export const PRICING_PLANS = [
@@ -58,6 +60,7 @@ export const PRICING_PLANS = [
       { ar: "استيراد CSV ذكي", en: "Smart CSV Import" },
       { ar: "تقارير متقدمة", en: "Advanced Reports" },
       { ar: "حتى 5 مستخدمين", en: "Up to 5 Users" },
+      { ar: "تصنيف ذكي بالذكاء الاصطناعي", en: "AI-Powered Classification" },
       { ar: "دعم ذو أولوية", en: "Priority Support" },
     ],
   },
@@ -78,6 +81,7 @@ export const PRICING_PLANS = [
       { ar: "API مخصص", en: "Custom API" },
       { ar: "مدير حساب مخصص", en: "Dedicated Account Manager" },
       { ar: "تكامل مع أنظمة ERP", en: "ERP Integration" },
+      { ar: "مساعد ضريبي ذكي", en: "AI Tax Assistant" },
       { ar: "تدريب مخصص", en: "Custom Training" },
       { ar: "اتفاقية مستوى الخدمة", en: "SLA Agreement" },
     ],

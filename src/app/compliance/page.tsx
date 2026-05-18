@@ -20,7 +20,6 @@ export const metadata: Metadata = {
 
 export const runtime = 'edge';
 export const dynamic = "force-dynamic";
-export const revalidate = 3600;
 
 const complianceTopics = [
   {
@@ -115,7 +114,7 @@ export default function CompliancePage() {
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             كل ما تحتاج معرفته عن الامتثال الضريبي في الإمارات العربية المتحدة.
-            ابقَ متوافقاً مع متطلبات الهيئة الاتحادية للضرائب.
+            ابقَ ملتزماً بمتطلبات الهيئة الاتحادية للضرائب.
           </p>
         </div>
       </section>

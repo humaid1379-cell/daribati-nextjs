@@ -10,10 +10,8 @@ export const metadata: Metadata = {
   },
 };
 
-// Force SSR (no static generation)
 export const runtime = 'edge';
 export const dynamic = "force-dynamic";
-export const revalidate = 3600; // ISR: revalidate every hour
 
 const features = [
   {
@@ -74,14 +72,14 @@ const features = [
     ),
     titleAr: "دعم شركات المناطق الحرة",
     titleEn: "Free Zone Support",
-    descAr: "حلول مخصصة لشركات المناطق الحرة مع معالجة ضريبية متخصصة.",
+    descAr: "حلول مخصصة لشركات المناطق الحرة مع معالجة ضريبية متخصصة وإعفاءات مؤهلة.",
   },
 ];
 
 const stats = [
-  { value: "+1000", labelAr: "شركة تثق بنا" },
+  { value: "5%", labelAr: "نسبة ضريبة القيمة المضافة" },
   { value: "99.9%", labelAr: "وقت التشغيل" },
-  { value: "+50K", labelAr: "فاتورة شهرياً" },
+  { value: "9%", labelAr: "نسبة ضريبة الشركات" },
   { value: "24/7", labelAr: "دعم فني" },
 ];
 
@@ -112,7 +110,7 @@ export default function HomePage() {
                 className="px-8 py-4 bg-white rounded-xl text-lg font-bold transition-all hover:bg-blue-50 hover:scale-105"
                 style={{ color: BRAND_COLOR }}
               >
-                ابدأ الآن مجاناً
+                ابدأ تجربتك المجانية
               </Link>
               <Link
                 href="/calculator"
@@ -126,7 +124,7 @@ export default function HomePage() {
       </section>
 
       {/* Stats Section */}
-      <section className="bg-white border-b border-gray-100">
+      <section className="bg-white border-b border-gray-100" aria-label="إحصائيات">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
@@ -145,7 +143,7 @@ export default function HomePage() {
       </section>
 
       {/* Features Section */}
-      <section className="bg-gray-50 py-20">
+      <section className="bg-gray-50 py-20" aria-label="مميزات المنصة">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
@@ -179,7 +177,7 @@ export default function HomePage() {
       </section>
 
       {/* How It Works */}
-      <section className="bg-white py-20">
+      <section className="bg-white py-20" aria-label="كيف يعمل">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
@@ -236,7 +234,7 @@ export default function HomePage() {
             ابدأ إدارة ضرائبك بذكاء اليوم
           </h2>
           <p className="text-lg text-blue-100 mb-10 max-w-2xl mx-auto">
-            انضم إلى أكثر من 1000 شركة في الإمارات تستخدم ضريبتي لإدارة
+            انضم إلى الشركات في الإمارات التي تستخدم ضريبتي لإدارة
             الامتثال الضريبي بكفاءة.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">

@@ -20,7 +20,6 @@ export const metadata: Metadata = {
 
 export const runtime = 'edge';
 export const dynamic = "force-dynamic";
-export const revalidate = 3600;
 
 export default function CalculatorPage() {
   const jsonLd = getWebPageJsonLd(

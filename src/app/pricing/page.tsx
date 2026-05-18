@@ -20,7 +20,6 @@ export const metadata: Metadata = {
 
 export const runtime = 'edge';
 export const dynamic = "force-dynamic";
-export const revalidate = 3600;
 
 export default function PricingPage() {
   const jsonLd = getWebPageJsonLd(
@@ -36,15 +35,12 @@ export default function PricingPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      {/* Visually hidden H1 for accessibility */}
-      <h1 className="sr-only">باقات وأسعار ضريبتي</h1>
-
       {/* Hero */}
       <section className="bg-gray-50 py-16 lg:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
             باقات تناسب كل الأعمال
-          </h2>
+          </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             اختر الباقة المناسبة لحجم أعمالك. جميع الباقات تشمل تحديثات مجانية
             ودعم فني.
@@ -53,7 +49,7 @@ export default function PricingPage() {
       </section>
 
       {/* Pricing Cards */}
-      <section className="bg-white py-16">
+      <section className="bg-white py-16" aria-label="باقات الأسعار">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {PRICING_PLANS.map((plan) => (
@@ -88,13 +84,13 @@ export default function PricingPage() {
                     </span>
                     <div className="text-sm text-gray-500">
                       <div>{plan.currency}</div>
-                      <div>/ {plan.periodAr}</div>
+                      <div>{plan.periodAr}</div>
                     </div>
                   </div>
                   <p className="text-sm text-gray-500 mt-2">{plan.subtitleAr}</p>
                 </div>
 
-                <ul className="space-y-3 mb-8">
+                <ul className="space-y-3 mb-8" role="list">
                   {plan.features.map((feature, idx) => (
                     <li key={idx} className="flex items-start gap-3">
                       <svg
@@ -126,7 +122,7 @@ export default function PricingPage() {
                 </a>
               ) : (
                 <Link
-                  href="/dashboard/"
+                  href="/dashboard"
                   className={`block w-full py-3 px-6 rounded-xl text-center font-semibold transition-all ${
                     plan.popular
                       ? "text-white hover:opacity-90"
@@ -138,7 +134,7 @@ export default function PricingPage() {
                       : { borderColor: BRAND_COLOR, color: BRAND_COLOR }
                   }
                 >
-                  ابدأ الآن
+                  ابدأ تجربة مجانية
                 </Link>
               )}
               </div>
@@ -148,9 +144,9 @@ export default function PricingPage() {
       </section>
 
       {/* FAQ */}
-      <section className="bg-gray-50 py-16">
+      <section className="bg-gray-50 py-16" aria-label="الأسئلة الشائعة">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-gray-900 text-center mb-12">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 text-center mb-12">
             الأسئلة الشائعة
           </h2>
           <div className="space-y-6">
@@ -165,11 +161,11 @@ export default function PricingPage() {
               },
               {
                 q: "ما هي طرق الدفع المتاحة؟",
-                a: "نقبل بطاقات الائتمان والخصم، والتحويل البنكي، وApple Pay.",
+                a: "نقبل بطاقات الائتمان والخصم والتحويل البنكي.",
               },
               {
                 q: "هل البيانات آمنة؟",
-                a: "نعم، نستخدم تشفير SSL/TLS وتخزين البيانات في مراكز بيانات معتمدة في الإمارات.",
+                a: "نعم، نستخدم تشفير TLS 1.3 أثناء النقل وتشفير AES-256 للبيانات المخزنة مع مصادقة متعددة العوامل لحماية الحسابات.",
               },
             ].map((faq, index) => (
               <div

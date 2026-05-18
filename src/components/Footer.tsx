@@ -148,7 +148,7 @@ export default function Footer() {
               </li>
               <li>
                 <span className="text-sm" style={{ color: "#b8c8d8" }}>
-                  الإمارات العربية المتحدة
+                  دبي، الإمارات العربية المتحدة
                 </span>
               </li>
             </ul>
