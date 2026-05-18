@@ -1,0 +1,37 @@
+name: Arabic Spell Check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**/*.tsx'
+      - 'src/**/*.ts'
+      - 'src/**/*.css'
+      - 'src/**/*.json'
+      - 'src/**/*.md'
+      - 'scripts/arabic-dictionary.json'
+
+jobs:
+  spellcheck:
+    name: Arabic Spell Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run Arabic spell check
+        run: |
+          python3 scripts/arabic-spellcheck.py --strict
+
+      - name: Upload spell check results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: spellcheck-results
+          path: scripts/arabic-dictionary.json
+          retention-days: 7

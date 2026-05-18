@@ -1,0 +1,138 @@
+name: WAF Monitoring
+
+on:
+  schedule:
+    # Run every hour
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+jobs:
+  check-accessibility:
+    name: Check Site Accessibility
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check daribati.ae accessibility
+        id: check
+        run: |
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -L --max-time 30 "https://daribati.ae" || echo "000")
+          echo "http_code=$HTTP_CODE" >> $GITHUB_OUTPUT
+          echo "Site returned HTTP $HTTP_CODE"
+
+          if [ "$HTTP_CODE" = "403" ]; then
+            echo "blocked=true" >> $GITHUB_OUTPUT
+            echo "::error::Site is returning 403 - possibly blocked by WAF"
+          elif [ "$HTTP_CODE" = "000" ]; then
+            echo "blocked=true" >> $GITHUB_OUTPUT
+            echo "::error::Site is unreachable (timeout or DNS failure)"
+          elif [ "$HTTP_CODE" -ge 500 ]; then
+            echo "blocked=true" >> $GITHUB_OUTPUT
+            echo "::error::Site is returning server error $HTTP_CODE"
+          else
+            echo "blocked=false" >> $GITHUB_OUTPUT
+            echo "Site is accessible (HTTP $HTTP_CODE)"
+          fi
+
+      - name: Check with different User-Agents
+        id: ua_check
+        if: steps.check.outputs.blocked == 'true'
+        run: |
+          echo "Testing with Googlebot UA..."
+          GOOGLE_CODE=$(curl -s -o /dev/null -w "%{http_code}" -L --max-time 30 \
+            -H "User-Agent: Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" \
+            "https://daribati.ae" || echo "000")
+          echo "Googlebot UA: HTTP $GOOGLE_CODE"
+
+          echo "Testing with Chrome UA..."
+          CHROME_CODE=$(curl -s -o /dev/null -w "%{http_code}" -L --max-time 30 \
+            -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
+            "https://daribati.ae" || echo "000")
+          echo "Chrome UA: HTTP $CHROME_CODE"
+
+          echo "google_code=$GOOGLE_CODE" >> $GITHUB_OUTPUT
+          echo "chrome_code=$CHROME_CODE" >> $GITHUB_OUTPUT
+
+      - name: Send alert email via GitHub Action
+        if: steps.check.outputs.blocked == 'true'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.SMTP_SERVER }}
+          server_port: ${{ secrets.SMTP_PORT }}
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "🚨 WAF ALERT: daribati.ae returning ${{ steps.check.outputs.http_code }}"
+          to: admin@daribati.ae
+          from: monitoring@daribati.ae
+          body: |
+            WAF Monitoring Alert for daribati.ae
+
+            Status: Site is returning HTTP ${{ steps.check.outputs.http_code }}
+            Time: ${{ github.event.repository.updated_at }}
+            
+            This may indicate the site is being blocked by Cloudflare WAF/Bot Fight Mode.
+            
+            Additional checks (if 403):
+            - Googlebot UA: ${{ steps.ua_check.outputs.google_code || 'N/A' }}
+            - Chrome UA: ${{ steps.ua_check.outputs.chrome_code || 'N/A' }}
+            
+            Action Required:
+            1. Check Cloudflare WAF dashboard
+            2. Review Bot Fight Mode settings
+            3. Check if legitimate traffic is being blocked
+            
+            Workflow Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        continue-on-error: true
+
+      - name: Create issue on block detection
+        if: steps.check.outputs.blocked == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `🚨 WAF Alert: daribati.ae returning HTTP ${process.env.HTTP_CODE}`;
+            const body = `## WAF Monitoring Alert
+
+            **Status Code:** ${process.env.HTTP_CODE}
+            **Time:** ${new Date().toISOString()}
+            **Workflow Run:** ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}
+
+            The site may be blocked by Cloudflare WAF or Bot Fight Mode.
+
+            ### Recommended Actions
+            1. Check [Cloudflare WAF Dashboard](https://dash.cloudflare.com)
+            2. Review Bot Fight Mode settings
+            3. Check WAF exception rules for legitimate crawlers
+            4. Review recent WAF rule changes
+            `;
+
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'waf-alert'
+            });
+
+            const recentIssue = issues.data.find(i => {
+              const created = new Date(i.created_at);
+              const now = new Date();
+              return (now - created) < 24 * 60 * 60 * 1000; // Within 24 hours
+            });
+
+            if (recentIssue) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: recentIssue.number,
+                body: `Still blocked at ${new Date().toISOString()} - HTTP ${process.env.HTTP_CODE}`
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['waf-alert', 'automated', 'urgent']
+              });
+            }
+        env:
+          HTTP_CODE: ${{ steps.check.outputs.http_code }}
