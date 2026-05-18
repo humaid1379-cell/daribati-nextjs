@@ -31,11 +31,10 @@ export default function Header({
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/logo-full.svg"
-              alt="ضريبتي - Daribati"
-              width={160}
-              height={46}
-              className="h-10 w-auto"
+              src="/logo.png"
+              alt="ضريبتي — Daribati"
+              height={40}
+              style={{ height: "40px", width: "auto", objectFit: "contain" }}
             />
           </Link>
 
