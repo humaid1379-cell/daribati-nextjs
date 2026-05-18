@@ -51,7 +51,7 @@ export default async function AuthButton() {
         className="px-5 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90"
         style={{ backgroundColor: BRAND_COLOR }}
       >
-        إنشاء حساب
+        جرّب مجاناً
       </a>
     </div>
   );

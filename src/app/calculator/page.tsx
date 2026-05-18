@@ -43,7 +43,7 @@ export default function CalculatorPage() {
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             احسب ضريبة القيمة المضافة (VAT) وضريبة الشركات (Corporate Tax)
-            المستحقة على أعمالك في الإمارات.
+            المستحقة على أعمالك في الإمارات. هذه الأداة مجانية ولا تتطلب تسجيل حساب.
           </p>
         </div>
       </section>
@@ -81,7 +81,7 @@ export default function CalculatorPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-brand-primary font-bold">•</span>
-                  <span>تقديم الإقرارات: ربع سنوي</span>
+                  <span>تقديم الإقرارات: ربع سنوي (عادةً)</span>
                 </li>
               </ul>
             </div>
@@ -109,6 +109,9 @@ export default function CalculatorPage() {
               </ul>
             </div>
           </div>
+          <p className="text-center text-sm text-gray-400 mt-8">
+            المعلومات أعلاه للأغراض التوعوية فقط. يُرجى الرجوع إلى الموقع الرسمي للهيئة الاتحادية للضرائب للحصول على أحدث المعلومات.
+          </p>
         </div>
       </section>
     </>

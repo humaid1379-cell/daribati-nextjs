@@ -74,7 +74,7 @@ export default async function DashboardPage() {
             مرحباً، {user.name ?? user.email} 👋
           </h1>
           <p className="text-blue-100 text-sm">
-            مرحباً بك في لوحة تحكم ضريبتي. يمكنك إدارة ضرائبك وفواتيرك من هنا.
+            مرحباً بك في لوحة تحكم ضريبتي. نعمل على إطلاق جميع الميزات قريباً.
           </p>
         </div>
 

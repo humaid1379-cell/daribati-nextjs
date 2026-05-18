@@ -31,8 +31,8 @@ export const PRICING_PLANS = [
     currency: "AED",
     period: "month",
     periodAr: "شهرياً",
-    subtitleAr: "للتجربة والبدء",
-    subtitleEn: "To get started",
+    subtitleAr: "للشركات الصغيرة والأفراد",
+    subtitleEn: "For small businesses",
     popular: false,
     features: [
       { ar: "إدارة ضريبة القيمة المضافة", en: "VAT Management" },

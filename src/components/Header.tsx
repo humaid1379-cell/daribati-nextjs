@@ -85,7 +85,7 @@ export default function Header({
             type="button"
             className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="فتح القائمة"
+            aria-label={mobileMenuOpen ? "إغلاق القائمة" : "فتح القائمة"}
             aria-expanded={mobileMenuOpen}
           >
             <svg
@@ -147,7 +147,7 @@ export default function Header({
                   style={{ backgroundColor: BRAND_COLOR }}
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  إنشاء حساب
+                  جرّب مجاناً 14 يوماً
                 </a>
               </div>
             </div>

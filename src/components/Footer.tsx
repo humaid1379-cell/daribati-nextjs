@@ -127,7 +127,7 @@ export default function Footer() {
               </li>
               <li>
                 <span className="text-sm" style={{ color: "#b8c8d8" }}>
-                  التقارير المالية
+                  التقارير الضريبية
                 </span>
               </li>
             </ul>

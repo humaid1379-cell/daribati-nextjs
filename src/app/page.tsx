@@ -78,9 +78,9 @@ const features = [
 
 const stats = [
   { value: "5%", labelAr: "نسبة ضريبة القيمة المضافة" },
-  { value: "99.9%", labelAr: "وقت التشغيل" },
   { value: "9%", labelAr: "نسبة ضريبة الشركات" },
-  { value: "24/7", labelAr: "دعم فني" },
+  { value: "14 يوماً", labelAr: "تجربة مجانية" },
+  { value: "3 باقات", labelAr: "تناسب جميع الأعمال" },
 ];
 
 export default function HomePage() {
@@ -98,7 +98,7 @@ export default function HomePage() {
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
               منصة الضرائب والفوترة
               <br />
-              <span className="text-blue-300">الأولى في الإمارات</span>
+              <span className="text-blue-300">المتكاملة في الإمارات</span>
             </h1>
             <p className="text-lg sm:text-xl text-blue-100 max-w-2xl mx-auto mb-10 leading-relaxed">
               أتمتة الامتثال لضريبة القيمة المضافة وضريبة الشركات مع فواتير
@@ -110,7 +110,7 @@ export default function HomePage() {
                 className="px-8 py-4 bg-white rounded-xl text-lg font-bold transition-all hover:bg-blue-50 hover:scale-105"
                 style={{ color: BRAND_COLOR }}
               >
-                ابدأ تجربتك المجانية
+                جرّب مجاناً لمدة 14 يوماً
               </Link>
               <Link
                 href="/calculator"
@@ -192,7 +192,7 @@ export default function HomePage() {
               {
                 step: "1",
                 titleAr: "سجّل حسابك",
-                descAr: "أنشئ حسابك في دقائق وأضف بيانات شركتك.",
+                descAr: "أنشئ حسابك في دقائق وأضف بيانات شركتك. تجربة مجانية لمدة 14 يوماً.",
               },
               {
                 step: "2",
@@ -201,7 +201,7 @@ export default function HomePage() {
               },
               {
                 step: "3",
-                titleAr: "أدر ضرائبك",
+                titleAr: "أدِر ضرائبك",
                 descAr: "احصل على تقارير ضريبية دقيقة وفواتير متوافقة تلقائياً.",
               },
             ].map((item) => (
@@ -234,8 +234,8 @@ export default function HomePage() {
             ابدأ إدارة ضرائبك بذكاء اليوم
           </h2>
           <p className="text-lg text-blue-100 mb-10 max-w-2xl mx-auto">
-            انضم إلى الشركات في الإمارات التي تستخدم ضريبتي لإدارة
-            الامتثال الضريبي بكفاءة.
+            منصة مصممة خصيصاً للشركات في الإمارات لإدارة
+            الامتثال الضريبي بكفاءة. جرّب مجاناً لمدة 14 يوماً.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
@@ -243,7 +243,7 @@ export default function HomePage() {
               className="px-8 py-4 bg-white rounded-xl text-lg font-bold transition-all hover:bg-blue-50 hover:scale-105"
               style={{ color: BRAND_COLOR }}
             >
-              اختر خطتك
+              اختر باقتك وابدأ التجربة
             </Link>
             <Link
               href="/calculator"
