@@ -16,10 +16,16 @@ export default function Footer() {
           <div className="md:col-span-1">
             <Link
               href="/"
-              className="text-2xl font-bold text-white"
               aria-label="ضريبتي - الصفحة الرئيسية"
             >
-              ضريبتي
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/logo-full-white.svg"
+                alt="ضريبتي - Daribati"
+                width={160}
+                height={46}
+                className="h-10 w-auto"
+              />
             </Link>
             <p className="mt-3 text-sm leading-relaxed" style={{ color: "#b8c8d8" }}>
               منصة ضريبية ومحاسبية متكاملة للشركات في الإمارات. أتمتة الامتثال

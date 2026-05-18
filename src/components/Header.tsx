@@ -26,28 +26,17 @@ export default function Header({
           {/* Logo */}
           <Link
             href="/"
-            className="flex items-center gap-2 text-xl font-bold"
-            style={{ color: BRAND_COLOR }}
+            className="flex items-center gap-2"
             aria-label="ضريبتي - الصفحة الرئيسية"
           >
-            <svg
-              width="32"
-              height="32"
-              viewBox="0 0 32 32"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              aria-hidden="true"
-            >
-              <rect width="32" height="32" rx="8" fill={BRAND_COLOR} />
-              <path
-                d="M8 16L14 22L24 10"
-                stroke="white"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <span>ضريبتي</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo-full.svg"
+              alt="ضريبتي - Daribati"
+              width={160}
+              height={46}
+              className="h-10 w-auto"
+            />
           </Link>
 
           {/* Desktop Navigation */}
