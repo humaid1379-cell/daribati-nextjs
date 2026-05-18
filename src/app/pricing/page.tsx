@@ -134,7 +134,7 @@ export default function PricingPage() {
                       : { borderColor: BRAND_COLOR, color: BRAND_COLOR }
                   }
                 >
-                  ابدأ تجربة مجانية
+                  ابدأ تجربتك المجانية
                 </Link>
               )}
               </div>
