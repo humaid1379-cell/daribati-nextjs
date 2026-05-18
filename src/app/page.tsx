@@ -1,10 +1,10 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { SITE_URL, SITE_DESCRIPTION, BRAND_COLOR } from "@/lib/constants";
+import { SITE_URL, SITE_DESCRIPTION_AR, BRAND_COLOR } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: "ضريبتي — Daribati | منصة الضرائب والفوترة في الإمارات",
-  description: SITE_DESCRIPTION,
+  description: SITE_DESCRIPTION_AR,
   alternates: {
     canonical: SITE_URL,
   },

@@ -1,13 +1,16 @@
 import { redirect } from "next/navigation";
 import { auth0 } from "@/lib/auth0";
 import type { Metadata } from "next";
-import { BRAND_COLOR, SITE_NAME_AR } from "@/lib/constants";
+import { BRAND_COLOR, SITE_NAME_AR, SITE_URL } from "@/lib/constants";
 
 export const runtime = 'edge';
 
 export const metadata: Metadata = {
   title: "لوحة التحكم",
   description: "لوحة تحكم ضريبتي — إدارة الضرائب والفواتير",
+  alternates: {
+    canonical: `${SITE_URL}/dashboard`,
+  },
 };
 
 export default async function DashboardPage() {

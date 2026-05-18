@@ -3,7 +3,7 @@ export const runtime = 'edge';
 import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Sans_Arabic } from "next/font/google";
 import "./globals.css";
-import { SITE_TITLE, SITE_DESCRIPTION, SITE_URL, BRAND_COLOR } from "@/lib/constants";
+import { SITE_TITLE, SITE_DESCRIPTION_AR, SITE_URL, BRAND_COLOR } from "@/lib/constants";
 import { getSoftwareApplicationJsonLd, getOrganizationJsonLd } from "@/lib/jsonld";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -28,23 +28,42 @@ export const metadata: Metadata = {
     default: SITE_TITLE,
     template: `%s | ${SITE_TITLE}`,
   },
-  description: SITE_DESCRIPTION,
+  description: SITE_DESCRIPTION_AR,
   metadataBase: new URL(SITE_URL),
   alternates: {
     canonical: SITE_URL,
   },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon-192.png", type: "image/png", sizes: "192x192" },
+      { url: "/icon-512.png", type: "image/png", sizes: "512x512" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
   openGraph: {
     title: SITE_TITLE,
-    description: SITE_DESCRIPTION,
+    description: SITE_DESCRIPTION_AR,
     url: SITE_URL,
     siteName: SITE_TITLE,
     locale: "ar_AE",
     type: "website",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "ضريبتي — منصة الضرائب والفوترة الأولى في الإمارات",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: SITE_TITLE,
-    description: SITE_DESCRIPTION,
+    description: SITE_DESCRIPTION_AR,
+    images: ["/og-image.png"],
   },
   robots: {
     index: true,
