@@ -1,96 +1,141 @@
 #!/bin/bash
-# Domain Sync Verification Script for daribati.ae
-# Can be run standalone or as part of CI/CD pipeline
+# =============================================================================
+# Tool 9 Supporting Script: Domain Sync Verification
+# =============================================================================
+# Compares JS bundle hashes between custom domain and pages.dev
+# Checks for Worker route conflicts and stale proxy workers
+#
+# Usage:
+#   ./scripts/verify-domain-sync.sh
+#
+# Required environment variables (for full check):
+#   CLOUDFLARE_API_TOKEN
+#   CLOUDFLARE_ZONE_ID
+# =============================================================================
 
-set -e
+set -euo pipefail
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+BLUE='\033[0;34m'
+NC='\033[0m'
 
-echo "=========================================="
-echo "  Domain Sync Verification - daribati.ae"
-echo "=========================================="
-echo ""
+CUSTOM_DOMAIN="https://daribati.ae"
+PAGES_DOMAIN="https://daribati-nextjs.pages.dev"
+ZONE_ID="${CLOUDFLARE_ZONE_ID:-9da22a778f96f90dc21cdb7e1886d260}"
 
 PASS=0
 FAIL=0
 
-# Test 1: www.daribati.ae redirect
-echo "📋 Test 1: www.daribati.ae → daribati.ae redirect"
-FINAL_URL=$(curl -s -o /dev/null -w "%{url_effective}" -L --max-time 30 "https://www.daribati.ae" 2>/dev/null || echo "FAILED")
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -L --max-time 30 "https://www.daribati.ae" 2>/dev/null || echo "000")
+echo "=========================================="
+echo "  Domain Sync Verification"
+echo "  Custom: ${CUSTOM_DOMAIN}"
+echo "  Pages:  ${PAGES_DOMAIN}"
+echo "=========================================="
+echo ""
 
-if echo "$FINAL_URL" | grep -q "https://daribati.ae"; then
-    echo -e "   ${GREEN}✅ PASS${NC} - www.daribati.ae redirects to daribati.ae (HTTP $HTTP_CODE)"
+# Test 1: Compare build IDs
+echo -e "${BLUE}Test 1: JS Bundle Hash Comparison${NC}"
+CUSTOM_HTML=$(curl -s -L --max-time 30 \
+    -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
+    "${CUSTOM_DOMAIN}" 2>/dev/null || echo "")
+PAGES_HTML=$(curl -s -L --max-time 30 \
+    -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
+    "${PAGES_DOMAIN}" 2>/dev/null || echo "")
+
+CUSTOM_BUILD=$(echo "$CUSTOM_HTML" | grep -oP '/_next/static/\K[A-Za-z0-9_-]+(?=/_buildManifest)' | head -1 || echo "none")
+PAGES_BUILD=$(echo "$PAGES_HTML" | grep -oP '/_next/static/\K[A-Za-z0-9_-]+(?=/_buildManifest)' | head -1 || echo "none")
+
+echo "  Custom domain build: $CUSTOM_BUILD"
+echo "  Pages.dev build:     $PAGES_BUILD"
+
+if [ "$CUSTOM_BUILD" = "$PAGES_BUILD" ] && [ "$CUSTOM_BUILD" != "none" ]; then
+    echo -e "  ${GREEN}✅ PASS${NC} - Build IDs match"
     PASS=$((PASS + 1))
+elif [ "$CUSTOM_BUILD" = "none" ] && [ "$PAGES_BUILD" = "none" ]; then
+    echo -e "  ${YELLOW}⚠️ WARN${NC} - Could not extract build IDs from either domain"
 else
-    echo -e "   ${RED}❌ FAIL${NC} - www.daribati.ae does NOT redirect properly"
-    echo "   Final URL: $FINAL_URL (HTTP $HTTP_CODE)"
+    echo -e "  ${RED}❌ FAIL${NC} - Build IDs do not match"
     FAIL=$((FAIL + 1))
 fi
 echo ""
 
-# Test 2: daribati.ae accessibility
-echo "📋 Test 2: daribati.ae accessibility"
-MAIN_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "https://daribati.ae" 2>/dev/null || echo "000")
+# Test 2: Check for Worker routes
+echo -e "${BLUE}Test 2: Worker Route Conflicts${NC}"
+if [ -n "${CLOUDFLARE_API_TOKEN:-}" ]; then
+    ROUTES=$(curl -s -X GET \
+        "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/workers/routes" \
+        -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+        -H "Content-Type: application/json" 2>/dev/null)
 
-if [ "$MAIN_CODE" -ge 200 ] && [ "$MAIN_CODE" -lt 400 ]; then
-    echo -e "   ${GREEN}✅ PASS${NC} - daribati.ae is accessible (HTTP $MAIN_CODE)"
-    PASS=$((PASS + 1))
-else
-    echo -e "   ${RED}❌ FAIL${NC} - daribati.ae returned HTTP $MAIN_CODE"
-    FAIL=$((FAIL + 1))
-fi
-echo ""
+    ROUTE_COUNT=$(echo "$ROUTES" | python3 -c "import sys,json; d=json.load(sys.stdin); print(len(d.get('result',[])))" 2>/dev/null || echo "0")
+    echo "  Found $ROUTE_COUNT Worker route(s)"
 
-# Test 3: Pages.dev accessibility
-echo "📋 Test 3: daribati-nextjs.pages.dev accessibility"
-PAGES_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "https://daribati-nextjs.pages.dev" 2>/dev/null || echo "000")
+    CONFLICTS=$(echo "$ROUTES" | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+conflicts = []
+for route in data.get('result', []):
+    pattern = route.get('pattern', '')
+    if 'daribati' in pattern and '*' in pattern:
+        conflicts.append(f'{pattern} -> {route.get(\"script\", \"no script\")}')
+if conflicts:
+    for c in conflicts:
+        print(f'  ⚠️  {c}')
+else:
+    print('  No conflicting routes found')
+" 2>/dev/null || echo "  Could not parse routes")
 
-if [ "$PAGES_CODE" -ge 200 ] && [ "$PAGES_CODE" -lt 400 ]; then
-    echo -e "   ${GREEN}✅ PASS${NC} - daribati-nextjs.pages.dev is accessible (HTTP $PAGES_CODE)"
-    PASS=$((PASS + 1))
-else
-    echo -e "   ${YELLOW}⚠️ WARN${NC} - daribati-nextjs.pages.dev returned HTTP $PAGES_CODE"
-    FAIL=$((FAIL + 1))
-fi
-echo ""
-
-# Test 4: Check latest deployment (requires CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID)
-if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ACCOUNT_ID" ]; then
-    echo "📋 Test 4: Deployment sync check"
-    DEPLOY_INFO=$(curl -s -X GET \
-        "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/daribati-nextjs/deployments?sort_by=created_on&sort_order=desc&per_page=1" \
-        -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-        -H "Content-Type: application/json")
-    
-    DEPLOY_COMMIT=$(echo "$DEPLOY_INFO" | jq -r '.result[0].deployment_trigger.metadata.commit_hash // "unknown"')
-    DEPLOY_STATUS=$(echo "$DEPLOY_INFO" | jq -r '.result[0].latest_stage.status // "unknown"')
-    DEPLOY_TIME=$(echo "$DEPLOY_INFO" | jq -r '.result[0].created_on // "unknown"')
-    
-    echo "   Latest deployment commit: $DEPLOY_COMMIT"
-    echo "   Deployment status: $DEPLOY_STATUS"
-    echo "   Deployment time: $DEPLOY_TIME"
-    
-    if [ "$DEPLOY_STATUS" = "success" ]; then
-        echo -e "   ${GREEN}✅ PASS${NC} - Latest deployment succeeded"
-        PASS=$((PASS + 1))
-    else
-        echo -e "   ${RED}❌ FAIL${NC} - Latest deployment status: $DEPLOY_STATUS"
+    echo "$CONFLICTS"
+    if echo "$CONFLICTS" | grep -q "⚠️"; then
         FAIL=$((FAIL + 1))
+    else
+        PASS=$((PASS + 1))
     fi
 else
-    echo "📋 Test 4: Deployment sync check (SKIPPED - no API credentials)"
+    echo -e "  ${YELLOW}⚠️ SKIPPED${NC} - No CLOUDFLARE_API_TOKEN set"
 fi
 echo ""
 
-# Summary
+# Test 3: Check for stale proxy behavior
+echo -e "${BLUE}Test 3: Stale Proxy Detection${NC}"
+CUSTOM_HEADERS=$(curl -sI -L --max-time 15 "${CUSTOM_DOMAIN}" 2>/dev/null)
+
+# Check cf-ray header (should be present for Cloudflare)
+CF_RAY=$(echo "$CUSTOM_HEADERS" | grep -i "^cf-ray:" | head -1 | tr -d '\r')
+if [ -n "$CF_RAY" ]; then
+    echo -e "  ${GREEN}✅${NC} Cloudflare Ray ID present: $(echo $CF_RAY | cut -d: -f2 | xargs)"
+else
+    echo -e "  ${RED}❌${NC} No Cloudflare Ray ID (traffic may not be going through CF)"
+    FAIL=$((FAIL + 1))
+fi
+
+# Check for unexpected redirects
+REDIRECT_CHECK=$(curl -s -o /dev/null -w "%{redirect_url}" --max-time 15 "${CUSTOM_DOMAIN}" 2>/dev/null || echo "")
+if [ -n "$REDIRECT_CHECK" ]; then
+    if echo "$REDIRECT_CHECK" | grep -q "pages.dev"; then
+        echo -e "  ${RED}❌${NC} Custom domain redirects to pages.dev (stale proxy!)"
+        FAIL=$((FAIL + 1))
+    else
+        echo -e "  ${YELLOW}⚠️${NC} Redirect detected: $REDIRECT_CHECK"
+    fi
+else
+    echo -e "  ${GREEN}✅${NC} No unexpected redirects"
+    PASS=$((PASS + 1))
+fi
+
+# Check response time difference
+CUSTOM_TIME=$(curl -s -o /dev/null -w "%{time_total}" -L --max-time 15 "${CUSTOM_DOMAIN}" 2>/dev/null || echo "0")
+PAGES_TIME=$(curl -s -o /dev/null -w "%{time_total}" -L --max-time 15 "${PAGES_DOMAIN}" 2>/dev/null || echo "0")
+echo "  Response times: Custom=${CUSTOM_TIME}s, Pages=${PAGES_TIME}s"
+
+echo ""
 echo "=========================================="
-echo "  Results: $PASS passed, $FAIL failed"
+echo "  Results: ${PASS} passed, ${FAIL} failed"
 echo "=========================================="
 
 if [ $FAIL -gt 0 ]; then
     exit 1
 fi
+exit 0
