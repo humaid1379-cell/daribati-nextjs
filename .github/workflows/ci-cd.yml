@@ -65,7 +65,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           npm install -g wrangler@3
-          wrangler pages deploy .vercel/output/static --project-name=daribati-nextjs --compatibility-flags=nodejs_compat
+          wrangler pages deploy .vercel/output/static --project-name=daribati-nextjs
 
   notify-on-failure:
     name: Notify on Failure
