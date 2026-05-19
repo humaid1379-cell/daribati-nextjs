@@ -1,0 +1,140 @@
+name: "Tool 4: Build Cache Buster"
+
+on:
+  workflow_run:
+    workflows: ["CI/CD Pipeline"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  cache-buster:
+    name: Verify and Bust Cache
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Wait for deployment propagation
+        run: sleep 45
+
+      - name: Check live site content
+        id: check
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+        run: |
+          MAX_RETRIES=3
+          RETRY=0
+          MATCH=false
+
+          while [ $RETRY -lt $MAX_RETRIES ]; do
+            echo "=== Attempt $((RETRY + 1)) of $MAX_RETRIES ==="
+
+            # Get expected build hash from latest deployment
+            DEPLOY_INFO=$(curl -s -X GET \
+              "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects/daribati-nextjs/deployments?sort_by=created_on&sort_order=desc&per_page=1" \
+              -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+              -H "Content-Type: application/json")
+
+            EXPECTED_COMMIT=$(echo "$DEPLOY_INFO" | jq -r '.result[0].deployment_trigger.metadata.commit_hash // "unknown"')
+            DEPLOY_URL=$(echo "$DEPLOY_INFO" | jq -r '.result[0].url // "unknown"')
+            echo "Expected commit: $EXPECTED_COMMIT"
+            echo "Deployment URL: $DEPLOY_URL"
+
+            # Fetch live site and deployment-specific URL
+            LIVE_CONTENT=$(curl -s -L --max-time 30 \
+              -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
+              "https://daribati.ae" | md5sum | cut -d' ' -f1)
+
+            DEPLOY_CONTENT=$(curl -s -L --max-time 30 \
+              -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
+              "${DEPLOY_URL}" | md5sum | cut -d' ' -f1)
+
+            echo "Live site hash: $LIVE_CONTENT"
+            echo "Deploy hash: $DEPLOY_CONTENT"
+
+            if [ "$LIVE_CONTENT" = "$DEPLOY_CONTENT" ]; then
+              echo "✅ Content matches! No cache issue."
+              MATCH=true
+              break
+            fi
+
+            echo "⚠️ Content mismatch detected. Purging cache..."
+
+            # Purge Cloudflare cache
+            PURGE_RESPONSE=$(curl -s -X POST \
+              "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/purge_cache" \
+              -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d '{"purge_everything":true}')
+
+            PURGE_SUCCESS=$(echo "$PURGE_RESPONSE" | jq -r '.success')
+            if [ "$PURGE_SUCCESS" = "true" ]; then
+              echo "Cache purged successfully. Waiting for propagation..."
+            else
+              echo "Cache purge failed:"
+              echo "$PURGE_RESPONSE" | jq .
+            fi
+
+            RETRY=$((RETRY + 1))
+            if [ $RETRY -lt $MAX_RETRIES ]; then
+              echo "Waiting 30 seconds before retry..."
+              sleep 30
+            fi
+          done
+
+          echo "match=$MATCH" >> $GITHUB_OUTPUT
+          echo "retries=$RETRY" >> $GITHUB_OUTPUT
+          echo "expected_commit=$EXPECTED_COMMIT" >> $GITHUB_OUTPUT
+
+      - name: Report results
+        run: |
+          echo "## Cache Buster Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.check.outputs.match }}" = "true" ]; then
+            echo "✅ **Content verified** - Live site matches deployment" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Content mismatch persists** after ${{ steps.check.outputs.retries }} retries" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Expected commit: \`${{ steps.check.outputs.expected_commit }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Retries used: ${{ steps.check.outputs.retries }}/3" >> $GITHUB_STEP_SUMMARY
+
+      - name: Create issue on persistent mismatch
+        if: steps.check.outputs.match == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🔄 Cache Buster: Persistent mismatch after 3 retries`,
+              body: `## Cache Mismatch Alert
+
+              **Time:** ${new Date().toISOString()}
+              **Expected Commit:** \`${process.env.EXPECTED_COMMIT}\`
+              **Workflow Run:** ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}
+
+              The live site content does not match the latest deployment even after 3 cache purge attempts.
+
+              ### Possible Causes
+              - Cloudflare Worker intercepting requests
+              - CDN edge cache not fully purged
+              - DNS propagation delay
+              - Stale deployment serving from a different edge
+
+              ### Recommended Actions
+              1. Manually purge cache from Cloudflare dashboard
+              2. Check Worker routes for conflicts
+              3. Verify deployment status in Pages dashboard
+              4. Consider triggering a fresh deployment
+              `,
+              labels: ['cache-issue', 'automated']
+            });
+        env:
+          EXPECTED_COMMIT: ${{ steps.check.outputs.expected_commit }}

@@ -1,0 +1,186 @@
+name: "Tool 9: Custom Domain Sync Checker"
+
+on:
+  workflow_run:
+    workflows: ["CI/CD Pipeline"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  domain-sync:
+    name: Verify Domain Sync
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Wait for deployment propagation
+        run: sleep 45
+
+      - name: Compare JS bundle hashes
+        id: bundle_check
+        run: |
+          echo "=== Comparing JS bundles between domains ==="
+
+          # Fetch HTML from both domains
+          CUSTOM_HTML=$(curl -s -L --max-time 30 \
+            -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
+            "https://daribati.ae")
+
+          PAGES_HTML=$(curl -s -L --max-time 30 \
+            -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
+            "https://daribati-nextjs.pages.dev")
+
+          # Extract _next/static chunk paths
+          CUSTOM_CHUNKS=$(echo "$CUSTOM_HTML" | grep -oP '/_next/static/chunks/[^"]+' | sort)
+          PAGES_CHUNKS=$(echo "$PAGES_HTML" | grep -oP '/_next/static/chunks/[^"]+' | sort)
+
+          # Extract build manifest hash
+          CUSTOM_BUILD_ID=$(echo "$CUSTOM_HTML" | grep -oP '/_next/static/[A-Za-z0-9_-]+/_buildManifest' | head -1 | grep -oP '/static/\K[^/]+')
+          PAGES_BUILD_ID=$(echo "$PAGES_HTML" | grep -oP '/_next/static/[A-Za-z0-9_-]+/_buildManifest' | head -1 | grep -oP '/static/\K[^/]+')
+
+          echo "Custom domain build ID: $CUSTOM_BUILD_ID"
+          echo "Pages.dev build ID: $PAGES_BUILD_ID"
+
+          if [ "$CUSTOM_BUILD_ID" = "$PAGES_BUILD_ID" ] && [ -n "$CUSTOM_BUILD_ID" ]; then
+            echo "✅ Build IDs match: $CUSTOM_BUILD_ID"
+            echo "status=match" >> $GITHUB_OUTPUT
+          elif [ -z "$CUSTOM_BUILD_ID" ] && [ -z "$PAGES_BUILD_ID" ]; then
+            echo "⚠️ Could not extract build IDs (may use different bundling)"
+            echo "status=unknown" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Build ID mismatch!"
+            echo "status=mismatch" >> $GITHUB_OUTPUT
+          fi
+
+          echo "custom_build_id=${CUSTOM_BUILD_ID:-none}" >> $GITHUB_OUTPUT
+          echo "pages_build_id=${PAGES_BUILD_ID:-none}" >> $GITHUB_OUTPUT
+
+      - name: Check for Worker route conflicts
+        id: worker_check
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+        run: |
+          echo "=== Checking Worker routes ==="
+
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "⚠️ No API token available, skipping Worker route check"
+            echo "status=skipped" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # List Worker routes for the zone
+          ROUTES=$(curl -s -X GET \
+            "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/workers/routes" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H "Content-Type: application/json")
+
+          ROUTE_COUNT=$(echo "$ROUTES" | jq '.result | length')
+          echo "Found $ROUTE_COUNT Worker routes"
+
+          # Check for potentially conflicting routes
+          CONFLICTS=""
+          echo "$ROUTES" | jq -r '.result[] | "\(.pattern) -> \(.script // "no script")"' | while read -r route; do
+            echo "  Route: $route"
+            if echo "$route" | grep -q "daribati.ae"; then
+              echo "  ⚠️ Found route matching daribati.ae: $route"
+            fi
+          done
+
+          # Check if any route intercepts all traffic
+          CATCH_ALL=$(echo "$ROUTES" | jq -r '.result[] | select(.pattern | test("\\*daribati\\.ae/\\*")) | .pattern')
+          if [ -n "$CATCH_ALL" ]; then
+            echo "❌ Catch-all Worker route found: $CATCH_ALL"
+            echo "status=conflict" >> $GITHUB_OUTPUT
+            echo "detail=Catch-all route: $CATCH_ALL" >> $GITHUB_OUTPUT
+          else
+            echo "✅ No conflicting catch-all Worker routes"
+            echo "status=clean" >> $GITHUB_OUTPUT
+            echo "detail=No conflicts found ($ROUTE_COUNT routes checked)" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Verify no stale proxy workers
+        id: proxy_check
+        run: |
+          echo "=== Checking for proxy behavior ==="
+
+          # Compare response headers to detect proxy workers
+          CUSTOM_HEADERS=$(curl -sI -L --max-time 15 "https://daribati.ae" 2>/dev/null)
+          PAGES_HEADERS=$(curl -sI -L --max-time 15 "https://daribati-nextjs.pages.dev" 2>/dev/null)
+
+          # Check for cf-worker header (indicates a Worker is processing)
+          CUSTOM_WORKER=$(echo "$CUSTOM_HEADERS" | grep -i "cf-worker" || echo "none")
+          PAGES_WORKER=$(echo "$PAGES_HEADERS" | grep -i "cf-worker" || echo "none")
+
+          echo "Custom domain cf-worker: $CUSTOM_WORKER"
+          echo "Pages.dev cf-worker: $PAGES_WORKER"
+
+          # Check for unexpected redirects
+          CUSTOM_LOCATION=$(echo "$CUSTOM_HEADERS" | grep -i "^location:" | head -1 || echo "none")
+          echo "Custom domain redirect: $CUSTOM_LOCATION"
+
+          if echo "$CUSTOM_LOCATION" | grep -qi "pages.dev"; then
+            echo "⚠️ Custom domain redirects to pages.dev (possible stale proxy)"
+            echo "status=stale_proxy" >> $GITHUB_OUTPUT
+          else
+            echo "✅ No stale proxy behavior detected"
+            echo "status=clean" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate summary
+        run: |
+          echo "## Domain Sync Check Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status | Details |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|---------|" >> $GITHUB_STEP_SUMMARY
+          echo "| JS Bundle Hash | ${{ steps.bundle_check.outputs.status }} | Custom: ${{ steps.bundle_check.outputs.custom_build_id }}, Pages: ${{ steps.bundle_check.outputs.pages_build_id }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Worker Routes | ${{ steps.worker_check.outputs.status }} | ${{ steps.worker_check.outputs.detail }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Proxy Detection | ${{ steps.proxy_check.outputs.status }} | - |" >> $GITHUB_STEP_SUMMARY
+
+      - name: Alert on sync issues
+        if: steps.bundle_check.outputs.status == 'mismatch' || steps.worker_check.outputs.status == 'conflict' || steps.proxy_check.outputs.status == 'stale_proxy'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `⚠️ Domain Sync Issue Detected`;
+            const body = `## Custom Domain Sync Check Failed
+
+            **Time:** ${new Date().toISOString()}
+            **Workflow Run:** ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}
+
+            ### Results
+            | Check | Status |
+            |-------|--------|
+            | JS Bundle Hash | ${process.env.BUNDLE_STATUS} |
+            | Worker Routes | ${process.env.WORKER_STATUS} |
+            | Proxy Detection | ${process.env.PROXY_STATUS} |
+
+            ### Build IDs
+            - Custom domain: \`${process.env.CUSTOM_BUILD_ID}\`
+            - Pages.dev: \`${process.env.PAGES_BUILD_ID}\`
+
+            ### Recommended Actions
+            1. Purge Cloudflare cache
+            2. Remove conflicting Worker routes
+            3. Check custom domain configuration in Pages
+            4. Verify no stale Workers are deployed
+            `;
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['domain-sync', 'automated']
+            });
+        env:
+          BUNDLE_STATUS: ${{ steps.bundle_check.outputs.status }}
+          WORKER_STATUS: ${{ steps.worker_check.outputs.status }}
+          PROXY_STATUS: ${{ steps.proxy_check.outputs.status }}
+          CUSTOM_BUILD_ID: ${{ steps.bundle_check.outputs.custom_build_id }}
+          PAGES_BUILD_ID: ${{ steps.bundle_check.outputs.pages_build_id }}

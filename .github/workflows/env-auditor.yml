@@ -1,0 +1,53 @@
+name: "Tool 6: Environment Variables Auditor"
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  audit-env-vars:
+    name: Audit Environment Variables
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check required environment variables in Cloudflare Pages
+        id: audit
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          bash scripts/env-auditor.sh | tee /tmp/env-audit-output.txt
+          EXIT_CODE=${PIPESTATUS[0]}
+          echo "exit_code=$EXIT_CODE" >> $GITHUB_OUTPUT
+
+          MISSING=$(grep -c "❌" /tmp/env-audit-output.txt || echo "0")
+          PRESENT=$(grep -c "✅" /tmp/env-audit-output.txt || echo "0")
+          echo "missing=$MISSING" >> $GITHUB_OUTPUT
+          echo "present=$PRESENT" >> $GITHUB_OUTPUT
+        continue-on-error: true
+
+      - name: Generate summary
+        run: |
+          echo "## Environment Variables Audit" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Present: ${{ steps.audit.outputs.present }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ❌ Missing: ${{ steps.audit.outputs.missing }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat /tmp/env-audit-output.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Fail if variables missing
+        if: steps.audit.outputs.exit_code != '0'
+        run: |
+          echo "::error::Required environment variables are missing from Cloudflare Pages configuration."
+          echo "Run 'bash scripts/env-auditor.sh' locally or check the workflow summary for details."
+          exit 1

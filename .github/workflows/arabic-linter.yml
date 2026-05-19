@@ -1,0 +1,51 @@
+name: "Tool 2: Arabic Content Linter"
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**/*.tsx"
+      - "src/**/*.ts"
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/**/*.tsx"
+      - "src/**/*.ts"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  arabic-lint:
+    name: Arabic Content Spell Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run Arabic content linter
+        id: lint
+        run: |
+          python3 scripts/arabic-linter.py
+        continue-on-error: true
+
+      - name: Report results
+        if: steps.lint.outcome == 'failure'
+        run: |
+          echo "## ❌ Arabic Content Lint Failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Arabic typos were found in the codebase." >> $GITHUB_STEP_SUMMARY
+          echo "Run \`python3 scripts/arabic-linter.py\` locally to see details." >> $GITHUB_STEP_SUMMARY
+          exit 1
+
+      - name: Success report
+        if: steps.lint.outcome == 'success'
+        run: |
+          echo "## ✅ Arabic Content Lint Passed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "No Arabic typos detected." >> $GITHUB_STEP_SUMMARY

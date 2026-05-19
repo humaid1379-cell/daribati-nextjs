@@ -1,0 +1,91 @@
+name: "Tool 8: Security Headers Validator"
+
+on:
+  workflow_run:
+    workflows: ["CI/CD Pipeline"]
+    types: [completed]
+  schedule:
+    - cron: "0 8 * * 1" # Weekly on Monday at 8:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  security-headers:
+    name: Validate Security Headers
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Wait for deployment propagation
+        if: github.event_name != 'schedule'
+        run: sleep 30
+
+      - name: Check security headers
+        id: headers
+        run: |
+          bash scripts/security-headers-check.sh | tee /tmp/headers-output.txt
+          EXIT_CODE=${PIPESTATUS[0]}
+          echo "exit_code=$EXIT_CODE" >> $GITHUB_OUTPUT
+
+          # Count passes and failures
+          PASSES=$(grep -c "✅" /tmp/headers-output.txt || echo "0")
+          FAILURES=$(grep -c "❌" /tmp/headers-output.txt || echo "0")
+          WARNINGS=$(grep -c "⚠️" /tmp/headers-output.txt || echo "0")
+          echo "passes=$PASSES" >> $GITHUB_OUTPUT
+          echo "failures=$FAILURES" >> $GITHUB_OUTPUT
+          echo "warnings=$WARNINGS" >> $GITHUB_OUTPUT
+        continue-on-error: true
+
+      - name: Generate summary
+        run: |
+          echo "## Security Headers Validation" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Passed: ${{ steps.headers.outputs.passes }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ❌ Failed: ${{ steps.headers.outputs.failures }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ⚠️ Warnings: ${{ steps.headers.outputs.warnings }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat /tmp/headers-output.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Create issue on critical failures
+        if: steps.headers.outputs.failures > 2
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const output = fs.readFileSync('/tmp/headers-output.txt', 'utf8');
+            const title = `🔒 Security Headers: ${process.env.FAILURES} headers missing`;
+            const body = `## Security Headers Validation Failed
+
+            **Time:** ${new Date().toISOString()}
+            **Passes:** ${process.env.PASSES} | **Failures:** ${process.env.FAILURES} | **Warnings:** ${process.env.WARNINGS}
+
+            ### Full Report
+            \`\`\`
+            ${output}
+            \`\`\`
+
+            ### Recommended Actions
+            1. Add missing headers in \`next.config.mjs\` or Cloudflare Transform Rules
+            2. Review [Security Headers Best Practices](https://securityheaders.com/)
+            3. Run \`bash scripts/security-headers-check.sh\` locally for details
+
+            **Workflow Run:** ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}
+            `;
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['security', 'automated']
+            });
+        env:
+          PASSES: ${{ steps.headers.outputs.passes }}
+          FAILURES: ${{ steps.headers.outputs.failures }}
+          WARNINGS: ${{ steps.headers.outputs.warnings }}

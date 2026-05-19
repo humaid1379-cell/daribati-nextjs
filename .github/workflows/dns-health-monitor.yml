@@ -1,0 +1,211 @@
+name: "Tool 5: DNS Health Monitor"
+
+on:
+  schedule:
+    - cron: "0 6 * * *" # Daily at 6:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  dns-health:
+    name: DNS & SSL Health Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check DNS resolution for daribati.ae
+        id: dns_apex
+        run: |
+          echo "Resolving daribati.ae..."
+          RESULT=$(dig +short daribati.ae A 2>/dev/null || echo "FAILED")
+          CNAME=$(dig +short daribati.ae CNAME 2>/dev/null || echo "NONE")
+          echo "A records: $RESULT"
+          echo "CNAME: $CNAME"
+
+          if [ -z "$RESULT" ] && [ "$CNAME" = "NONE" ]; then
+            echo "status=fail" >> $GITHUB_OUTPUT
+            echo "detail=No DNS records found for daribati.ae" >> $GITHUB_OUTPUT
+          else
+            echo "status=pass" >> $GITHUB_OUTPUT
+            echo "detail=Resolved: $RESULT $CNAME" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check DNS resolution for www.daribati.ae
+        id: dns_www
+        run: |
+          echo "Resolving www.daribati.ae..."
+          CNAME=$(dig +short www.daribati.ae CNAME 2>/dev/null || echo "NONE")
+          A_RECORD=$(dig +short www.daribati.ae A 2>/dev/null || echo "NONE")
+          echo "CNAME: $CNAME"
+          echo "A records: $A_RECORD"
+
+          if echo "$CNAME" | grep -qi "pages.dev\|cloudflare"; then
+            echo "status=pass" >> $GITHUB_OUTPUT
+            echo "detail=CNAME points to: $CNAME" >> $GITHUB_OUTPUT
+          elif [ -n "$A_RECORD" ] && [ "$A_RECORD" != "NONE" ]; then
+            echo "status=pass" >> $GITHUB_OUTPUT
+            echo "detail=A record: $A_RECORD (proxied through Cloudflare)" >> $GITHUB_OUTPUT
+          else
+            echo "status=warn" >> $GITHUB_OUTPUT
+            echo "detail=www CNAME: $CNAME, A: $A_RECORD" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Verify CNAME target
+        id: cname_check
+        run: |
+          echo "Checking if daribati.ae points to pages.dev..."
+          # For Cloudflare proxied domains, check via HTTP
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 "https://daribati.ae" || echo "000")
+          SERVER=$(curl -sI --max-time 15 "https://daribati.ae" 2>/dev/null | grep -i "^server:" | head -1 || echo "unknown")
+
+          echo "HTTP Response: $RESPONSE"
+          echo "Server: $SERVER"
+
+          if echo "$SERVER" | grep -qi "cloudflare"; then
+            echo "status=pass" >> $GITHUB_OUTPUT
+            echo "detail=Served by Cloudflare (HTTP $RESPONSE)" >> $GITHUB_OUTPUT
+          elif [ "$RESPONSE" = "000" ]; then
+            echo "status=fail" >> $GITHUB_OUTPUT
+            echo "detail=Site unreachable" >> $GITHUB_OUTPUT
+          else
+            echo "status=warn" >> $GITHUB_OUTPUT
+            echo "detail=Server: $SERVER (HTTP $RESPONSE)" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check SSL certificate validity
+        id: ssl_check
+        run: |
+          echo "Checking SSL certificate for daribati.ae..."
+          CERT_INFO=$(echo | openssl s_client -servername daribati.ae -connect daribati.ae:443 2>/dev/null | openssl x509 -noout -dates -subject 2>/dev/null || echo "FAILED")
+
+          if [ "$CERT_INFO" = "FAILED" ]; then
+            echo "status=fail" >> $GITHUB_OUTPUT
+            echo "detail=Could not retrieve SSL certificate" >> $GITHUB_OUTPUT
+            echo "expiry=unknown" >> $GITHUB_OUTPUT
+          else
+            EXPIRY=$(echo "$CERT_INFO" | grep "notAfter" | cut -d= -f2)
+            SUBJECT=$(echo "$CERT_INFO" | grep "subject" | sed 's/subject=//')
+            echo "Certificate expiry: $EXPIRY"
+            echo "Subject: $SUBJECT"
+
+            # Check if cert expires within 14 days
+            EXPIRY_EPOCH=$(date -d "$EXPIRY" +%s 2>/dev/null || echo "0")
+            NOW_EPOCH=$(date +%s)
+            DAYS_LEFT=$(( (EXPIRY_EPOCH - NOW_EPOCH) / 86400 ))
+
+            echo "Days until expiry: $DAYS_LEFT"
+            echo "expiry=$EXPIRY" >> $GITHUB_OUTPUT
+            echo "days_left=$DAYS_LEFT" >> $GITHUB_OUTPUT
+
+            if [ "$DAYS_LEFT" -lt 7 ]; then
+              echo "status=critical" >> $GITHUB_OUTPUT
+              echo "detail=SSL expires in $DAYS_LEFT days! ($EXPIRY)" >> $GITHUB_OUTPUT
+            elif [ "$DAYS_LEFT" -lt 14 ]; then
+              echo "status=warn" >> $GITHUB_OUTPUT
+              echo "detail=SSL expires in $DAYS_LEFT days ($EXPIRY)" >> $GITHUB_OUTPUT
+            else
+              echo "status=pass" >> $GITHUB_OUTPUT
+              echo "detail=SSL valid for $DAYS_LEFT days (expires: $EXPIRY)" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Check SSL for www subdomain
+        id: ssl_www
+        run: |
+          echo "Checking SSL for www.daribati.ae..."
+          WWW_CERT=$(echo | openssl s_client -servername www.daribati.ae -connect www.daribati.ae:443 2>/dev/null | openssl x509 -noout -dates 2>/dev/null || echo "FAILED")
+          if [ "$WWW_CERT" = "FAILED" ]; then
+            echo "status=warn" >> $GITHUB_OUTPUT
+            echo "detail=Could not retrieve www SSL certificate" >> $GITHUB_OUTPUT
+          else
+            WWW_EXPIRY=$(echo "$WWW_CERT" | grep "notAfter" | cut -d= -f2)
+            echo "status=pass" >> $GITHUB_OUTPUT
+            echo "detail=www SSL valid (expires: $WWW_EXPIRY)" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate summary
+        id: summary
+        run: |
+          echo "## DNS Health Monitor Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status | Details |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|---------|" >> $GITHUB_STEP_SUMMARY
+          echo "| DNS (apex) | ${{ steps.dns_apex.outputs.status }} | ${{ steps.dns_apex.outputs.detail }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| DNS (www) | ${{ steps.dns_www.outputs.status }} | ${{ steps.dns_www.outputs.detail }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Cloudflare routing | ${{ steps.cname_check.outputs.status }} | ${{ steps.cname_check.outputs.detail }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| SSL (apex) | ${{ steps.ssl_check.outputs.status }} | ${{ steps.ssl_check.outputs.detail }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| SSL (www) | ${{ steps.ssl_www.outputs.status }} | ${{ steps.ssl_www.outputs.detail }} |" >> $GITHUB_STEP_SUMMARY
+
+          # Determine if any check failed
+          FAILED=false
+          if [ "${{ steps.dns_apex.outputs.status }}" = "fail" ] || \
+             [ "${{ steps.cname_check.outputs.status }}" = "fail" ] || \
+             [ "${{ steps.ssl_check.outputs.status }}" = "fail" ] || \
+             [ "${{ steps.ssl_check.outputs.status }}" = "critical" ]; then
+            FAILED=true
+          fi
+          echo "failed=$FAILED" >> $GITHUB_OUTPUT
+
+      - name: Create issue on failure
+        if: steps.summary.outputs.failed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `🏥 DNS Health Check Failed - ${new Date().toISOString().split('T')[0]}`;
+            const body = `## DNS Health Monitor Alert
+
+            **Time:** ${new Date().toISOString()}
+            **Workflow Run:** ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}
+
+            ### Results
+            | Check | Status | Details |
+            |-------|--------|---------|
+            | DNS (apex) | ${process.env.DNS_APEX_STATUS} | ${process.env.DNS_APEX_DETAIL} |
+            | DNS (www) | ${process.env.DNS_WWW_STATUS} | ${process.env.DNS_WWW_DETAIL} |
+            | Cloudflare routing | ${process.env.CNAME_STATUS} | ${process.env.CNAME_DETAIL} |
+            | SSL (apex) | ${process.env.SSL_STATUS} | ${process.env.SSL_DETAIL} |
+            | SSL (www) | ${process.env.SSL_WWW_STATUS} | ${process.env.SSL_WWW_DETAIL} |
+
+            ### Recommended Actions
+            1. Check Cloudflare DNS settings
+            2. Verify domain registration status
+            3. Check SSL/TLS settings in Cloudflare dashboard
+            4. Ensure Pages custom domain is still active
+            `;
+
+            // Avoid duplicate issues within 24 hours
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'dns-health'
+            });
+
+            const recent = issues.data.find(i => {
+              const created = new Date(i.created_at);
+              return (Date.now() - created.getTime()) < 86400000;
+            });
+
+            if (!recent) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['dns-health', 'automated']
+              });
+            }
+        env:
+          DNS_APEX_STATUS: ${{ steps.dns_apex.outputs.status }}
+          DNS_APEX_DETAIL: ${{ steps.dns_apex.outputs.detail }}
+          DNS_WWW_STATUS: ${{ steps.dns_www.outputs.status }}
+          DNS_WWW_DETAIL: ${{ steps.dns_www.outputs.detail }}
+          CNAME_STATUS: ${{ steps.cname_check.outputs.status }}
+          CNAME_DETAIL: ${{ steps.cname_check.outputs.detail }}
+          SSL_STATUS: ${{ steps.ssl_check.outputs.status }}
+          SSL_DETAIL: ${{ steps.ssl_check.outputs.detail }}
+          SSL_WWW_STATUS: ${{ steps.ssl_www.outputs.status }}
+          SSL_WWW_DETAIL: ${{ steps.ssl_www.outputs.detail }}

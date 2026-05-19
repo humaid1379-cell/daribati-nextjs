@@ -1,0 +1,131 @@
+name: "Tool 7: Performance Budget Enforcer"
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  lighthouse:
+    name: Lighthouse Performance Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Install Lighthouse CI
+        run: npm install -g @lhci/cli@0.13.x
+
+      - name: Build project
+        run: pnpm build
+        env:
+          NODE_ENV: production
+        continue-on-error: true
+
+      - name: Run Lighthouse CI
+        id: lhci
+        run: |
+          lhci autorun --config=lighthouserc.json 2>&1 | tee /tmp/lhci-output.txt
+          echo "exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Run Arabic-specific checks
+        id: arabic_checks
+        run: |
+          echo "Running Arabic-specific performance checks..."
+          SITE_URL="https://daribati.ae"
+          FAILURES=""
+
+          # Check lang attribute
+          HTML=$(curl -s -L --max-time 30 "$SITE_URL" || echo "")
+          if echo "$HTML" | grep -q 'lang="ar"'; then
+            echo "✅ Arabic lang attribute present"
+          else
+            FAILURES="${FAILURES}\n- Missing lang=\"ar\" attribute on <html> tag"
+          fi
+
+          # Check dir="rtl" attribute
+          if echo "$HTML" | grep -q 'dir="rtl"'; then
+            echo "✅ RTL direction attribute present"
+          else
+            FAILURES="${FAILURES}\n- Missing dir=\"rtl\" attribute"
+          fi
+
+          # Check for Arabic font loading
+          if echo "$HTML" | grep -qi "arabic\|tajawal\|cairo\|noto-kufi\|ibm-plex-arabic\|font-ar"; then
+            echo "✅ Arabic font reference found"
+          else
+            FAILURES="${FAILURES}\n- No Arabic font reference detected in HTML"
+          fi
+
+          # Check for RTL CSS
+          if echo "$HTML" | grep -qi "direction:\s*rtl\|\.rtl\|[dir=rtl]"; then
+            echo "✅ RTL CSS detected"
+          elif echo "$HTML" | grep -q 'dir="rtl"'; then
+            echo "✅ RTL via HTML attribute (acceptable)"
+          else
+            FAILURES="${FAILURES}\n- No explicit RTL CSS direction found (may rely on dir attribute)"
+          fi
+
+          if [ -z "$FAILURES" ]; then
+            echo "status=pass" >> $GITHUB_OUTPUT
+            echo "All Arabic-specific checks passed!"
+          else
+            echo "status=warn" >> $GITHUB_OUTPUT
+            echo "failures<<EOF" >> $GITHUB_OUTPUT
+            echo -e "$FAILURES" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Parse Lighthouse scores
+        id: scores
+        run: |
+          # Try to extract scores from LHCI output
+          if [ -f /tmp/lhci-output.txt ]; then
+            PERF=$(grep -oP 'performance:\s*\K[0-9]+' /tmp/lhci-output.txt | head -1 || echo "N/A")
+            A11Y=$(grep -oP 'accessibility:\s*\K[0-9]+' /tmp/lhci-output.txt | head -1 || echo "N/A")
+            SEO=$(grep -oP 'seo:\s*\K[0-9]+' /tmp/lhci-output.txt | head -1 || echo "N/A")
+            BP=$(grep -oP 'best-practices:\s*\K[0-9]+' /tmp/lhci-output.txt | head -1 || echo "N/A")
+          fi
+
+          echo "performance=${PERF:-N/A}" >> $GITHUB_OUTPUT
+          echo "accessibility=${A11Y:-N/A}" >> $GITHUB_OUTPUT
+          echo "seo=${SEO:-N/A}" >> $GITHUB_OUTPUT
+          echo "best_practices=${BP:-N/A}" >> $GITHUB_OUTPUT
+
+      - name: Generate summary
+        run: |
+          echo "## Performance Budget Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Lighthouse Scores" >> $GITHUB_STEP_SUMMARY
+          echo "| Category | Score | Budget | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|--------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Performance | ${{ steps.scores.outputs.performance }} | > 80 | ${{ steps.scores.outputs.performance != 'N/A' && steps.scores.outputs.performance >= 80 && '✅' || '⚠️' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Accessibility | ${{ steps.scores.outputs.accessibility }} | > 90 | ${{ steps.scores.outputs.accessibility != 'N/A' && steps.scores.outputs.accessibility >= 90 && '✅' || '⚠️' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| SEO | ${{ steps.scores.outputs.seo }} | > 90 | ${{ steps.scores.outputs.seo != 'N/A' && steps.scores.outputs.seo >= 90 && '✅' || '⚠️' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Best Practices | ${{ steps.scores.outputs.best_practices }} | > 80 | ${{ steps.scores.outputs.best_practices != 'N/A' && steps.scores.outputs.best_practices >= 80 && '✅' || '⚠️' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Arabic-Specific Checks" >> $GITHUB_STEP_SUMMARY
+          echo "Status: ${{ steps.arabic_checks.outputs.status }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Fail on budget violation
+        if: steps.lhci.outputs.exit_code != '0'
+        run: |
+          echo "::error::Performance budget violated. Check Lighthouse CI results."
+          exit 1

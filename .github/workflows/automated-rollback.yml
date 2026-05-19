@@ -1,0 +1,248 @@
+name: "Tool 10: Automated Rollback System"
+
+on:
+  workflow_run:
+    workflows: ["CI/CD Pipeline"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  health-check-and-rollback:
+    name: Post-Deploy Health Check & Rollback
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Wait for deployment propagation
+        run: sleep 60
+
+      - name: Run health checks
+        id: health
+        run: |
+          SITE_URL="https://daribati.ae"
+          FAILURES=0
+          DETAILS=""
+
+          echo "=== Health Check 1: HTTP Status ==="
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -L --max-time 30 \
+            -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
+            "$SITE_URL" || echo "000")
+          echo "HTTP Status: $HTTP_CODE"
+
+          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 400 ]; then
+            echo "✅ HTTP status OK ($HTTP_CODE)"
+          else
+            FAILURES=$((FAILURES + 1))
+            DETAILS="${DETAILS}\n- HTTP status: $HTTP_CODE (expected 2xx/3xx)"
+          fi
+
+          echo "=== Health Check 2: Page Title ==="
+          BODY=$(curl -s -L --max-time 30 \
+            -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
+            "$SITE_URL")
+          TITLE=$(echo "$BODY" | grep -oP '(?<=<title>).*?(?=</title>)' | head -1)
+          echo "Page title: $TITLE"
+
+          if [ -n "$TITLE" ] && [ "$TITLE" != "Error" ] && [ "$TITLE" != "404" ]; then
+            echo "✅ Page title present: $TITLE"
+          else
+            FAILURES=$((FAILURES + 1))
+            DETAILS="${DETAILS}\n- Page title missing or error: '$TITLE'"
+          fi
+
+          echo "=== Health Check 3: Key Content ==="
+          # Check for Next.js app markers
+          if echo "$BODY" | grep -q "__NEXT_DATA__\|_next/static\|__next"; then
+            echo "✅ Next.js app markers found"
+          else
+            FAILURES=$((FAILURES + 1))
+            DETAILS="${DETAILS}\n- Next.js app markers not found (possible broken deployment)"
+          fi
+
+          echo "=== Health Check 4: No Error Pages ==="
+          if echo "$BODY" | grep -qi "application error\|internal server error\|502 bad gateway\|503 service"; then
+            FAILURES=$((FAILURES + 1))
+            DETAILS="${DETAILS}\n- Error page content detected in response"
+          else
+            echo "✅ No error page content detected"
+          fi
+
+          echo "=== Health Check 5: Response Time ==="
+          RESPONSE_TIME=$(curl -s -o /dev/null -w "%{time_total}" -L --max-time 30 \
+            -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
+            "$SITE_URL" || echo "99")
+          echo "Response time: ${RESPONSE_TIME}s"
+
+          # Fail if response takes more than 10 seconds
+          if (( $(echo "$RESPONSE_TIME > 10" | bc -l) )); then
+            FAILURES=$((FAILURES + 1))
+            DETAILS="${DETAILS}\n- Response time too slow: ${RESPONSE_TIME}s (threshold: 10s)"
+          else
+            echo "✅ Response time acceptable: ${RESPONSE_TIME}s"
+          fi
+
+          echo "failures=$FAILURES" >> $GITHUB_OUTPUT
+          echo "http_code=$HTTP_CODE" >> $GITHUB_OUTPUT
+          echo "title=$TITLE" >> $GITHUB_OUTPUT
+          echo "response_time=$RESPONSE_TIME" >> $GITHUB_OUTPUT
+          echo "details<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$DETAILS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+          if [ $FAILURES -ge 2 ]; then
+            echo "needs_rollback=true" >> $GITHUB_OUTPUT
+            echo "::error::Health checks failed ($FAILURES failures). Rollback needed."
+          else
+            echo "needs_rollback=false" >> $GITHUB_OUTPUT
+            echo "All critical health checks passed."
+          fi
+
+      - name: Get previous deployment for rollback
+        id: get_previous
+        if: steps.health.outputs.needs_rollback == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          echo "Fetching deployment history..."
+          DEPLOYMENTS=$(curl -s -X GET \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects/daribati-nextjs/deployments?sort_by=created_on&sort_order=desc&per_page=5" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H "Content-Type: application/json")
+
+          # Get the second deployment (previous successful one)
+          CURRENT_ID=$(echo "$DEPLOYMENTS" | jq -r '.result[0].id')
+          PREVIOUS_ID=$(echo "$DEPLOYMENTS" | jq -r '.result[1].id // empty')
+          PREVIOUS_COMMIT=$(echo "$DEPLOYMENTS" | jq -r '.result[1].deployment_trigger.metadata.commit_hash // "unknown"')
+          PREVIOUS_URL=$(echo "$DEPLOYMENTS" | jq -r '.result[1].url // "unknown"')
+
+          echo "Current deployment: $CURRENT_ID"
+          echo "Previous deployment: $PREVIOUS_ID"
+          echo "Previous commit: $PREVIOUS_COMMIT"
+          echo "Previous URL: $PREVIOUS_URL"
+
+          if [ -n "$PREVIOUS_ID" ] && [ "$PREVIOUS_ID" != "null" ]; then
+            echo "previous_id=$PREVIOUS_ID" >> $GITHUB_OUTPUT
+            echo "previous_commit=$PREVIOUS_COMMIT" >> $GITHUB_OUTPUT
+            echo "current_id=$CURRENT_ID" >> $GITHUB_OUTPUT
+            echo "can_rollback=true" >> $GITHUB_OUTPUT
+          else
+            echo "can_rollback=false" >> $GITHUB_OUTPUT
+            echo "::warning::No previous deployment found for rollback"
+          fi
+
+      - name: Execute rollback
+        id: rollback
+        if: steps.health.outputs.needs_rollback == 'true' && steps.get_previous.outputs.can_rollback == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          echo "🔄 Rolling back to deployment: ${{ steps.get_previous.outputs.previous_id }}"
+
+          # Rollback by creating a new deployment from the previous one
+          ROLLBACK_RESPONSE=$(curl -s -X POST \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects/daribati-nextjs/deployments/${{ steps.get_previous.outputs.previous_id }}/rollback" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H "Content-Type: application/json")
+
+          SUCCESS=$(echo "$ROLLBACK_RESPONSE" | jq -r '.success')
+          if [ "$SUCCESS" = "true" ]; then
+            echo "✅ Rollback initiated successfully"
+            echo "status=success" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Rollback failed:"
+            echo "$ROLLBACK_RESPONSE" | jq .
+            echo "status=failed" >> $GITHUB_OUTPUT
+
+            # Try alternative: retry the rollback with different endpoint
+            echo "Trying alternative rollback method..."
+            ALT_RESPONSE=$(curl -s -X POST \
+              "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects/daribati-nextjs/deployments/${{ steps.get_previous.outputs.previous_id }}/retry" \
+              -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+              -H "Content-Type: application/json")
+            ALT_SUCCESS=$(echo "$ALT_RESPONSE" | jq -r '.success')
+            if [ "$ALT_SUCCESS" = "true" ]; then
+              echo "✅ Alternative rollback method succeeded"
+              echo "status=success" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Create rollback notification issue
+        if: steps.health.outputs.needs_rollback == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const rollbackStatus = process.env.ROLLBACK_STATUS || 'not_attempted';
+            const emoji = rollbackStatus === 'success' ? '🔄' : '🚨';
+            const title = `${emoji} Automated Rollback ${rollbackStatus === 'success' ? 'Executed' : 'Required'} - ${context.sha.substring(0, 7)}`;
+            const body = `## Automated Rollback Report
+
+            **Time:** ${new Date().toISOString()}
+            **Commit:** \`${context.sha}\`
+            **Rollback Status:** ${rollbackStatus}
+            **Previous Deployment:** \`${process.env.PREVIOUS_ID || 'N/A'}\`
+
+            ### Health Check Results
+            | Check | Result |
+            |-------|--------|
+            | HTTP Status | ${process.env.HTTP_CODE} |
+            | Page Title | ${process.env.TITLE || 'N/A'} |
+            | Response Time | ${process.env.RESPONSE_TIME}s |
+            | Total Failures | ${process.env.FAILURES} |
+
+            ### Failure Details
+            ${process.env.DETAILS || 'N/A'}
+
+            ### Actions Taken
+            ${rollbackStatus === 'success'
+              ? `✅ Successfully rolled back to deployment \`${process.env.PREVIOUS_ID}\` (commit: \`${process.env.PREVIOUS_COMMIT}\`)`
+              : '❌ Rollback could not be completed automatically. Manual intervention required.'}
+
+            ### Next Steps
+            1. Investigate the failing commit: \`${context.sha}\`
+            2. Check deployment logs in Cloudflare Pages dashboard
+            3. Fix the issue and push a new deployment
+            4. Close this issue once resolved
+
+            **Workflow Run:** ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}
+            `;
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['rollback', 'automated', 'urgent']
+            });
+        env:
+          ROLLBACK_STATUS: ${{ steps.rollback.outputs.status }}
+          PREVIOUS_ID: ${{ steps.get_previous.outputs.previous_id }}
+          PREVIOUS_COMMIT: ${{ steps.get_previous.outputs.previous_commit }}
+          HTTP_CODE: ${{ steps.health.outputs.http_code }}
+          TITLE: ${{ steps.health.outputs.title }}
+          RESPONSE_TIME: ${{ steps.health.outputs.response_time }}
+          FAILURES: ${{ steps.health.outputs.failures }}
+          DETAILS: ${{ steps.health.outputs.details }}
+
+      - name: Summary
+        run: |
+          echo "## Rollback System Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.health.outputs.needs_rollback }}" = "true" ]; then
+            echo "⚠️ **Health checks failed** - Rollback was triggered" >> $GITHUB_STEP_SUMMARY
+            echo "- Rollback status: ${{ steps.rollback.outputs.status || 'not_attempted' }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ **All health checks passed** - No rollback needed" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| HTTP Status | ${{ steps.health.outputs.http_code }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Response Time | ${{ steps.health.outputs.response_time }}s |" >> $GITHUB_STEP_SUMMARY
+          echo "| Failures | ${{ steps.health.outputs.failures }} |" >> $GITHUB_STEP_SUMMARY
