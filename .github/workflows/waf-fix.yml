@@ -1,0 +1,230 @@
+name: Fix WAF Geo-Challenge Rule
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fix-waf:
+    name: Fix WAF - Allow Verified Bots Before Geo-Challenge
+    runs-on: ubuntu-latest
+    steps:
+      - name: Audit existing WAF custom rules
+        id: audit
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+        run: |
+          echo "=== Fetching existing WAF custom rules ==="
+          RULES=$(curl -s -X GET \
+            "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/rulesets/phases/http_request_firewall_custom/entrypoint" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H "Content-Type: application/json")
+          echo "Current rules:"
+          echo "$RULES" | jq '.'
+          RULESET_ID=$(echo "$RULES" | jq -r '.result.id // empty')
+          echo "ruleset_id=$RULESET_ID" >> $GITHUB_OUTPUT
+          echo "rules_json<<EOF" >> $GITHUB_OUTPUT
+          echo "$RULES" | jq -c '.result.rules // []' >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Check for geo-challenge rule
+        id: check_geo
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+        run: |
+          echo "=== Checking for geo-challenge rule ==="
+          RULES=$(curl -s -X GET \
+            "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/rulesets/phases/http_request_firewall_custom/entrypoint" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H "Content-Type: application/json")
+          
+          # Find geo-challenge rule
+          GEO_RULE=$(echo "$RULES" | jq -r '.result.rules[] | select(.action == "managed_challenge" and (.expression | test("ip.geoip.country"))) | .id' 2>/dev/null || echo "")
+          echo "Geo challenge rule ID: $GEO_RULE"
+          echo "geo_rule_id=$GEO_RULE" >> $GITHUB_OUTPUT
+          
+          # Get ruleset ID
+          RULESET_ID=$(echo "$RULES" | jq -r '.result.id // empty')
+          echo "ruleset_id=$RULESET_ID" >> $GITHUB_OUTPUT
+
+      - name: Create bot-allow skip rule BEFORE geo-challenge
+        id: create_bot_rule
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+        run: |
+          echo "=== Fetching current ruleset ==="
+          RULES_RESPONSE=$(curl -s -X GET \
+            "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/rulesets/phases/http_request_firewall_custom/entrypoint" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H "Content-Type: application/json")
+          
+          RULESET_ID=$(echo "$RULES_RESPONSE" | jq -r '.result.id // empty')
+          echo "Ruleset ID: $RULESET_ID"
+          
+          # Check if bot-allow rule already exists
+          EXISTING_BOT_RULE=$(echo "$RULES_RESPONSE" | jq -r '.result.rules[] | select(.description == "Allow verified bots - skip geo challenge") | .id' 2>/dev/null || echo "")
+          echo "Existing bot allow rule: $EXISTING_BOT_RULE"
+          
+          if [ -n "$EXISTING_BOT_RULE" ]; then
+            echo "Bot allow rule already exists: $EXISTING_BOT_RULE"
+            echo "skip_creation=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip_creation=false" >> $GITHUB_OUTPUT
+          fi
+          
+          echo "ruleset_id=$RULESET_ID" >> $GITHUB_OUTPUT
+          
+          # Get existing rules to preserve them
+          EXISTING_RULES=$(echo "$RULES_RESPONSE" | jq -c '.result.rules // []')
+          echo "Existing rules count: $(echo "$EXISTING_RULES" | jq 'length')"
+          echo "existing_rules<<EOF" >> $GITHUB_OUTPUT
+          echo "$EXISTING_RULES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Update WAF ruleset - add bot skip rule at top
+        id: update_waf
+        if: steps.create_bot_rule.outputs.skip_creation == 'false'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+        run: |
+          RULESET_ID="${{ steps.create_bot_rule.outputs.ruleset_id }}"
+          
+          # Build the new rules array: bot-skip rule FIRST, then existing rules
+          # The bot-skip rule allows verified bots (Googlebot, Bingbot, etc.) to bypass geo-challenge
+          BOT_SKIP_RULE='{
+            "action": "skip",
+            "action_parameters": {
+              "ruleset": "current"
+            },
+            "expression": "(cf.client.bot) or (http.user_agent contains \"Googlebot\") or (http.user_agent contains \"bingbot\") or (http.user_agent contains \"Baiduspider\") or (http.user_agent contains \"YandexBot\") or (http.user_agent contains \"DuckDuckBot\") or (http.user_agent contains \"Slurp\") or (http.user_agent contains \"facebookexternalhit\") or (http.user_agent contains \"Twitterbot\") or (http.user_agent contains \"LinkedInBot\") or (http.user_agent contains \"WhatsApp\") or (http.user_agent contains \"Applebot\") or (http.user_agent contains \"AhrefsBot\") or (http.user_agent contains \"SemrushBot\")",
+            "description": "Allow verified bots - skip geo challenge",
+            "enabled": true
+          }'
+          
+          # Get existing rules (without the bot-skip rule if it exists)
+          EXISTING_RULES='${{ steps.create_bot_rule.outputs.existing_rules }}'
+          
+          # Combine: bot-skip rule first, then existing rules
+          NEW_RULES=$(echo "$EXISTING_RULES" | jq --argjson bot_rule "$BOT_SKIP_RULE" '[$bot_rule] + .')
+          
+          echo "=== New rules to apply ==="
+          echo "$NEW_RULES" | jq '.[].description // .[].action'
+          
+          if [ -n "$RULESET_ID" ]; then
+            echo "=== Updating existing ruleset $RULESET_ID ==="
+            RESPONSE=$(curl -s -X PUT \
+              "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/rulesets/${RULESET_ID}" \
+              -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "{\"rules\": $NEW_RULES}")
+          else
+            echo "=== Creating new ruleset ==="
+            RESPONSE=$(curl -s -X POST \
+              "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/rulesets" \
+              -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "{\"name\": \"Custom WAF Rules\", \"kind\": \"zone\", \"phase\": \"http_request_firewall_custom\", \"rules\": $NEW_RULES}")
+          fi
+          
+          echo "=== WAF Update Response ==="
+          echo "$RESPONSE" | jq '.'
+          
+          SUCCESS=$(echo "$RESPONSE" | jq -r '.success')
+          echo "update_success=$SUCCESS" >> $GITHUB_OUTPUT
+          
+          if [ "$SUCCESS" = "true" ]; then
+            echo "✅ WAF rule updated successfully!"
+            NEW_RULESET_ID=$(echo "$RESPONSE" | jq -r '.result.id')
+            echo "New ruleset ID: $NEW_RULESET_ID"
+          else
+            echo "❌ WAF update failed!"
+            echo "$RESPONSE" | jq '.errors'
+            exit 1
+          fi
+
+      - name: Verify WAF rules after update
+        id: verify
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+        run: |
+          echo "=== Verifying WAF rules after update ==="
+          sleep 5
+          RULES=$(curl -s -X GET \
+            "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/rulesets/phases/http_request_firewall_custom/entrypoint" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H "Content-Type: application/json")
+          
+          echo "Current rules:"
+          echo "$RULES" | jq '.result.rules[] | {id: .id, description: .description, action: .action, enabled: .enabled}'
+          
+          BOT_RULE=$(echo "$RULES" | jq -r '.result.rules[] | select(.description == "Allow verified bots - skip geo challenge") | .id' 2>/dev/null || echo "")
+          
+          if [ -n "$BOT_RULE" ]; then
+            echo "✅ Bot allow rule is in place: $BOT_RULE"
+            echo "verified=true" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️ Bot allow rule not found in ruleset"
+            echo "verified=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Purge Cloudflare cache
+        id: purge
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+        run: |
+          echo "=== Purging Cloudflare cache ==="
+          PURGE_RESPONSE=$(curl -s -X POST \
+            "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/purge_cache" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d '{"purge_everything":true}')
+          
+          echo "Purge response:"
+          echo "$PURGE_RESPONSE" | jq '.'
+          
+          PURGE_SUCCESS=$(echo "$PURGE_RESPONSE" | jq -r '.success')
+          echo "purge_success=$PURGE_SUCCESS" >> $GITHUB_OUTPUT
+          
+          if [ "$PURGE_SUCCESS" = "true" ]; then
+            echo "✅ Cache purged successfully!"
+          else
+            echo "❌ Cache purge failed"
+          fi
+
+      - name: Test site accessibility
+        id: test_site
+        run: |
+          echo "=== Testing site accessibility ==="
+          sleep 10
+          
+          # Test with Googlebot UA
+          GOOGLE_CODE=$(curl -s -o /dev/null -w "%{http_code}" -L --max-time 30 \
+            -H "User-Agent: Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" \
+            "https://daribati.ae" || echo "000")
+          echo "Googlebot UA: HTTP $GOOGLE_CODE"
+          
+          # Test with regular browser UA
+          BROWSER_CODE=$(curl -s -o /dev/null -w "%{http_code}" -L --max-time 30 \
+            -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
+            "https://daribati.ae" || echo "000")
+          echo "Browser UA: HTTP $BROWSER_CODE"
+          
+          echo "google_code=$GOOGLE_CODE" >> $GITHUB_OUTPUT
+          echo "browser_code=$BROWSER_CODE" >> $GITHUB_OUTPUT
+
+      - name: Summary
+        run: |
+          echo "## WAF Fix Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Bot allow rule created | ${{ steps.update_waf.outputs.update_success == 'true' && '✅' || (steps.create_bot_rule.outputs.skip_creation == 'true' && '✅ Already existed' || '❌') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| WAF rules verified | ${{ steps.verify.outputs.verified == 'true' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Cache purged | ${{ steps.purge.outputs.purge_success == 'true' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Googlebot HTTP code | ${{ steps.test_site.outputs.google_code }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Browser HTTP code | ${{ steps.test_site.outputs.browser_code }} |" >> $GITHUB_STEP_SUMMARY
