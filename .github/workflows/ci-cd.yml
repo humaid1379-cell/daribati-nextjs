@@ -65,7 +65,11 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           npm install -g wrangler@3
+          # Temporarily hide wrangler.toml during deploy to avoid
+          # "Unknown arguments: compatibility-flags" error in wrangler v3 pages deploy
+          mv wrangler.toml wrangler.toml.bak
           wrangler pages deploy .vercel/output/static --project-name=daribati-nextjs
+          mv wrangler.toml.bak wrangler.toml
 
   notify-on-failure:
     name: Notify on Failure

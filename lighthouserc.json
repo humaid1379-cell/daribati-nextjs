@@ -1,11 +1,8 @@
 {
   "ci": {
     "collect": {
-      "startServerCommand": "pnpm start",
-      "startServerReadyPattern": "ready on",
-      "startServerReadyTimeout": 30000,
       "url": [
-        "http://localhost:3000"
+        "https://daribati.ae"
       ],
       "numberOfRuns": 3,
       "settings": {

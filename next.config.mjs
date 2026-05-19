@@ -78,6 +78,21 @@ const nextConfig = {
         destination: "/auth/logout",
         permanent: false,
       },
+      {
+        source: "/register",
+        destination: "/auth/login",
+        permanent: false,
+      },
+      {
+        source: "/signup",
+        destination: "/auth/login",
+        permanent: false,
+      },
+      {
+        source: "/ar",
+        destination: "/",
+        permanent: false,
+      },
     ];
   },
 };

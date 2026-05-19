@@ -52,6 +52,31 @@ export async function middleware(request: NextRequest) {
   
   response.headers.delete("X-Powered-By");
 
+  // Add Cache-Control headers for HTML pages to optimize TTFB
+  // Allow Cloudflare edge to cache HTML responses for 60s, browsers revalidate
+  const pathname = request.nextUrl.pathname;
+  const isAuthRoute = pathname.startsWith("/auth/") || pathname.startsWith("/api/");
+  const isDashboard = pathname.startsWith("/dashboard");
+
+  if (!isAuthRoute && !isDashboard) {
+    // Public pages: cache at edge for 60s, stale-while-revalidate for 300s
+    response.headers.set(
+      "Cache-Control",
+      "public, s-maxage=60, stale-while-revalidate=300"
+    );
+    // CDN-Cache-Control for Cloudflare specifically
+    response.headers.set(
+      "CDN-Cache-Control",
+      "public, max-age=60, stale-while-revalidate=300"
+    );
+  } else {
+    // Auth/dashboard pages: no caching
+    response.headers.set(
+      "Cache-Control",
+      "private, no-cache, no-store, must-revalidate"
+    );
+  }
+
   return response;
 }
 

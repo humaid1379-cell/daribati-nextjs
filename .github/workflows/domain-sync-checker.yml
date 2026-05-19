@@ -24,6 +24,7 @@ jobs:
       - name: Compare JS bundle hashes
         id: bundle_check
         run: |
+          set +e
           echo "=== Comparing JS bundles between domains ==="
 
           # Fetch HTML from both domains
@@ -35,13 +36,21 @@ jobs:
             -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
             "https://daribati-nextjs.pages.dev")
 
-          # Extract _next/static chunk paths
-          CUSTOM_CHUNKS=$(echo "$CUSTOM_HTML" | grep -oP '/_next/static/chunks/[^"]+' | sort)
-          PAGES_CHUNKS=$(echo "$PAGES_HTML" | grep -oP '/_next/static/chunks/[^"]+' | sort)
+          # Extract _next/static chunk paths (may be empty for Cloudflare Pages builds)
+          CUSTOM_CHUNKS=$(echo "$CUSTOM_HTML" | grep -oP '/_next/static/chunks/[^"]+' | sort || true)
+          PAGES_CHUNKS=$(echo "$PAGES_HTML" | grep -oP '/_next/static/chunks/[^"]+' | sort || true)
 
-          # Extract build manifest hash
-          CUSTOM_BUILD_ID=$(echo "$CUSTOM_HTML" | grep -oP '/_next/static/[A-Za-z0-9_-]+/_buildManifest' | head -1 | grep -oP '/static/\K[^/]+')
-          PAGES_BUILD_ID=$(echo "$PAGES_HTML" | grep -oP '/_next/static/[A-Za-z0-9_-]+/_buildManifest' | head -1 | grep -oP '/static/\K[^/]+')
+          # Try to extract build manifest hash (not present in all Next.js builds)
+          CUSTOM_BUILD_ID=$(echo "$CUSTOM_HTML" | grep -oP '/_next/static/[A-Za-z0-9_-]+/_buildManifest' | head -1 | grep -oP '/static/\K[^/]+' || true)
+          PAGES_BUILD_ID=$(echo "$PAGES_HTML" | grep -oP '/_next/static/[A-Za-z0-9_-]+/_buildManifest' | head -1 | grep -oP '/static/\K[^/]+' || true)
+
+          # Fallback: compare chunk hashes if buildManifest not found
+          if [ -z "$CUSTOM_BUILD_ID" ] && [ -n "$CUSTOM_CHUNKS" ]; then
+            CUSTOM_BUILD_ID=$(echo "$CUSTOM_CHUNKS" | md5sum | cut -d' ' -f1)
+          fi
+          if [ -z "$PAGES_BUILD_ID" ] && [ -n "$PAGES_CHUNKS" ]; then
+            PAGES_BUILD_ID=$(echo "$PAGES_CHUNKS" | md5sum | cut -d' ' -f1)
+          fi
 
           echo "Custom domain build ID: $CUSTOM_BUILD_ID"
           echo "Pages.dev build ID: $PAGES_BUILD_ID"
