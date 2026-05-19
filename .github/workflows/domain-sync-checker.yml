@@ -89,20 +89,21 @@ jobs:
             -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
             -H "Content-Type: application/json")
 
-          ROUTE_COUNT=$(echo "$ROUTES" | jq '.result | length')
+          ROUTE_COUNT=$(echo "$ROUTES" | jq '.result | length // 0')
           echo "Found $ROUTE_COUNT Worker routes"
 
-          # Check for potentially conflicting routes
-          CONFLICTS=""
-          echo "$ROUTES" | jq -r '.result[] | "\(.pattern) -> \(.script // "no script")"' | while read -r route; do
-            echo "  Route: $route"
-            if echo "$route" | grep -q "daribati.ae"; then
-              echo "  ⚠️ Found route matching daribati.ae: $route"
-            fi
-          done
+          # Check for potentially conflicting routes (skip if no routes)
+          if [ "$ROUTE_COUNT" != "0" ] && [ "$ROUTE_COUNT" != "null" ]; then
+            echo "$ROUTES" | jq -r '.result[]? | "\(.pattern) -> \(.script // "no script")"' | while read -r route; do
+              echo "  Route: $route"
+              if echo "$route" | grep -q "daribati.ae"; then
+                echo "  ⚠️ Found route matching daribati.ae: $route"
+              fi
+            done
+          fi
 
           # Check if any route intercepts all traffic
-          CATCH_ALL=$(echo "$ROUTES" | jq -r '.result[] | select(.pattern | test("\\*daribati\\.ae/\\*")) | .pattern')
+          CATCH_ALL=$(echo "$ROUTES" | jq -r '.result[]? | select(.pattern | test("\\*daribati\\.ae/\\*")) | .pattern' 2>/dev/null || true)
           if [ -n "$CATCH_ALL" ]; then
             echo "❌ Catch-all Worker route found: $CATCH_ALL"
             echo "status=conflict" >> $GITHUB_OUTPUT
