@@ -1,0 +1,72 @@
+name: WAF Diagnostic
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnose:
+    name: Diagnose Cloudflare API Access
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check API token permissions and WAF rules
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          echo "=== Verify API Token ==="
+          sleep 2
+          curl -s "https://api.cloudflare.com/client/v4/user/tokens/verify" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" | jq '.'
+
+          sleep 3
+
+          echo ""
+          echo "=== Zone Details ==="
+          curl -s "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" | jq '{success, errors, result: {name: .result.name, status: .result.status}}'
+
+          sleep 3
+
+          echo ""
+          echo "=== Firewall Rules (full response) ==="
+          curl -s "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/firewall/rules" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" | jq '{success, errors, result_count: (.result | length)}'
+
+          sleep 3
+
+          echo ""
+          echo "=== All Rulesets (full response) ==="
+          curl -s "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/rulesets" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" | jq '{success, errors, result_count: (.result | length)}'
+
+          sleep 3
+
+          echo ""
+          echo "=== WAF Custom Phase (full response) ==="
+          curl -s "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/rulesets/phases/http_request_firewall_custom/entrypoint" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" | jq '{success, errors, result: {id: .result.id, rules_count: (.result.rules | length)}}'
+
+          sleep 3
+
+          echo ""
+          echo "=== Security Level ==="
+          curl -s "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/settings/security_level" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" | jq '{success, errors, result}'
+
+          sleep 3
+
+          echo ""
+          echo "=== Pages Project Info ==="
+          curl -s "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects/daribati-nextjs" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" | jq '{success, errors, result: {name: .result.name, subdomain: .result.subdomain}}'
+
+          sleep 3
+
+          echo ""
+          echo "=== Cache Purge Test ==="
+          curl -s -X POST \
+            "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/purge_cache" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d '{"purge_everything":true}' | jq '{success, errors}'
