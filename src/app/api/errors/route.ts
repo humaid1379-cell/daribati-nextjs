@@ -37,7 +37,10 @@ export async function GET(request: NextRequest) {
   // Simple API key protection
   const apiKey = process.env.ERROR_API_KEY || "daribati-error-key-2024";
   if (key !== apiKey) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    return NextResponse.json(
+      { error: "Unauthorized", message: "Authentication required", status: 401 },
+      { status: 401 }
+    );
   }
 
   const view = searchParams.get("view");

@@ -193,7 +193,7 @@ export default function FeaturesPage() {
             {[
               { value: "100%", label: "متوافق مع الهيئة الاتحادية للضرائب" },
               { value: "5 دقائق", label: "لإعداد حسابك والبدء" },
-              { value: "24/7", label: "دعم فني متواصل" },
+              { value: "دعم فني", label: "عبر البريد الإلكتروني" },
               { value: "256-bit", label: "تشفير البيانات" },
             ].map((stat, index) => (
               <div key={index} className="text-center p-6">
