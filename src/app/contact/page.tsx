@@ -1,40 +1,58 @@
-import type { Metadata } from "next";
-import { SITE_URL, BRAND_COLOR } from "@/lib/constants";
-import { getWebPageJsonLd } from "@/lib/jsonld";
+"use client";
 
-export const runtime = "edge";
-
-export const metadata: Metadata = {
-  title: "تواصل معنا",
-  description:
-    "تواصل مع فريق ضريبتي. نحن هنا لمساعدتك في إدارة الضرائب والامتثال الضريبي في الإمارات.",
-  alternates: {
-    canonical: `${SITE_URL}/contact`,
-  },
-  openGraph: {
-    title: "تواصل معنا | ضريبتي — Daribati",
-    description:
-      "تواصل مع فريق ضريبتي للحصول على المساعدة والدعم.",
-    url: `${SITE_URL}/contact`,
-  },
-};
+import { useState, FormEvent } from "react";
+import { BRAND_COLOR } from "@/lib/constants";
 
 export default function ContactPage() {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitResult, setSubmitResult] = useState<{
+    success: boolean;
+    message: string;
+    reference?: string;
+    errors?: Record<string, string>;
+  } | null>(null);
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setSubmitResult(null);
+
+    const formData = new FormData(e.currentTarget);
+    const data = {
+      name: formData.get("name") as string,
+      email: formData.get("email") as string,
+      phone: formData.get("phone") as string,
+      company: formData.get("company") as string,
+      subject: formData.get("subject") as string,
+      message: formData.get("message") as string,
+      honeypot: formData.get("honeypot") as string,
+    };
+
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+      setSubmitResult(result);
+
+      if (result.success && response.status === 201) {
+        (e.target as HTMLFormElement).reset();
+      }
+    } catch {
+      setSubmitResult({
+        success: false,
+        message: "حدث خطأ في الاتصال. يرجى المحاولة لاحقاً.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(
-            getWebPageJsonLd(
-              "تواصل معنا",
-              "تواصل مع فريق ضريبتي للحصول على المساعدة والدعم.",
-              `${SITE_URL}/contact`
-            )
-          ),
-        }}
-      />
-
       {/* Hero Section */}
       <section
         className="py-20"
@@ -100,7 +118,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-1">الموقع</h3>
-                    <p className="text-gray-600">دبي، الإمارات العربية المتحدة</p>
+                    <p className="text-gray-600">أبوظبي، الإمارات العربية المتحدة</p>
                   </div>
                 </div>
 
@@ -181,12 +199,37 @@ export default function ContactPage() {
               <h2 className="text-2xl font-bold text-gray-900 mb-6">
                 أرسل لنا رسالة
               </h2>
-              <form
-                action="mailto:admin@daribati.ae"
-                method="POST"
-                encType="text/plain"
-                className="space-y-6"
-              >
+
+              {/* Success Message */}
+              {submitResult?.success && (
+                <div className="mb-6 p-4 rounded-xl bg-green-50 border border-green-200">
+                  <p className="text-green-800 font-medium">{submitResult.message}</p>
+                  {submitResult.reference && (
+                    <p className="text-green-600 text-sm mt-1">
+                      رقم المرجع: <span dir="ltr" className="font-mono">{submitResult.reference}</span>
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Error Message */}
+              {submitResult && !submitResult.success && !submitResult.errors && (
+                <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200">
+                  <p className="text-red-800 font-medium">{submitResult.message}</p>
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Honeypot - hidden from users */}
+                <div className="hidden" aria-hidden="true">
+                  <input
+                    type="text"
+                    name="honeypot"
+                    tabIndex={-1}
+                    autoComplete="off"
+                  />
+                </div>
+
                 <div>
                   <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
                     الاسم الكامل
@@ -197,10 +240,13 @@ export default function ContactPage() {
                     name="name"
                     required
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:border-transparent"
-                    style={{ focusRingColor: BRAND_COLOR } as React.CSSProperties}
                     placeholder="أدخل اسمك الكامل"
                   />
+                  {submitResult?.errors?.name && (
+                    <p className="text-red-500 text-sm mt-1">{submitResult.errors.name}</p>
+                  )}
                 </div>
+
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                     البريد الإلكتروني
@@ -214,7 +260,28 @@ export default function ContactPage() {
                     placeholder="example@company.com"
                     dir="ltr"
                   />
+                  {submitResult?.errors?.email && (
+                    <p className="text-red-500 text-sm mt-1">{submitResult.errors.email}</p>
+                  )}
                 </div>
+
+                <div>
+                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+                    رقم الهاتف (اختياري)
+                  </label>
+                  <input
+                    type="tel"
+                    id="phone"
+                    name="phone"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:border-transparent"
+                    placeholder="+971501234567"
+                    dir="ltr"
+                  />
+                  {submitResult?.errors?.phone && (
+                    <p className="text-red-500 text-sm mt-1">{submitResult.errors.phone}</p>
+                  )}
+                </div>
+
                 <div>
                   <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-2">
                     اسم الشركة
@@ -227,6 +294,7 @@ export default function ContactPage() {
                     placeholder="اسم شركتك (اختياري)"
                   />
                 </div>
+
                 <div>
                   <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
                     الموضوع
@@ -237,12 +305,15 @@ export default function ContactPage() {
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:border-transparent bg-white"
                   >
                     <option value="general">استفسار عام</option>
-                    <option value="sales">المبيعات والأسعار</option>
+                    <option value="pricing">المبيعات والأسعار</option>
                     <option value="support">الدعم الفني</option>
                     <option value="partnership">شراكات وتعاون</option>
-                    <option value="demo">طلب عرض تجريبي</option>
                   </select>
+                  {submitResult?.errors?.subject && (
+                    <p className="text-red-500 text-sm mt-1">{submitResult.errors.subject}</p>
+                  )}
                 </div>
+
                 <div>
                   <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
                     الرسالة
@@ -255,13 +326,18 @@ export default function ContactPage() {
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:border-transparent resize-none"
                     placeholder="اكتب رسالتك هنا..."
                   />
+                  {submitResult?.errors?.message && (
+                    <p className="text-red-500 text-sm mt-1">{submitResult.errors.message}</p>
+                  )}
                 </div>
+
                 <button
                   type="submit"
-                  className="w-full px-8 py-4 rounded-xl text-lg font-bold text-white transition-all hover:scale-[1.02]"
+                  disabled={isSubmitting}
+                  className="w-full px-8 py-4 rounded-xl text-lg font-bold text-white transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                   style={{ backgroundColor: BRAND_COLOR }}
                 >
-                  إرسال الرسالة
+                  {isSubmitting ? "جاري الإرسال..." : "إرسال الرسالة"}
                 </button>
               </form>
             </div>
