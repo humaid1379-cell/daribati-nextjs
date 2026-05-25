@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { PRICING_PLANS, SITE_URL, BRAND_COLOR, BRAND_GOLD } from "@/lib/constants";
+import { PRICING_PLANS, SITE_URL, BRAND_COLOR, BRAND_GOLD, BRAND_TEAL } from "@/lib/constants";
 import { getWebPageJsonLd } from "@/lib/jsonld";
 
 export const metadata: Metadata = {
@@ -36,7 +36,7 @@ export default function PricingPage() {
       />
 
       {/* Hero */}
-      <section className="py-16 lg:py-20" style={{ background: "linear-gradient(135deg, #faf8f5 0%, #f0f4f8 100%)" }}>
+      <section className="py-16 lg:py-20" style={{ background: "linear-gradient(135deg, #F3F4F6 0%, #E8F4FD 100%)" }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
             باقات تناسب كل الأعمال
@@ -65,7 +65,7 @@ export default function PricingPage() {
                 {plan.popular && (
                   <div
                     className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-sm font-semibold text-white"
-                    style={{ background: `linear-gradient(135deg, ${BRAND_GOLD} 0%, #d4b44a 100%)` }}
+                    style={{ background: "linear-gradient(135deg, #D4A853 0%, #B8860B 100%)" }}
                   >
                     الأكثر شيوعاً
                   </div>
@@ -97,7 +97,7 @@ export default function PricingPage() {
                       <svg
                         className="w-5 h-5 mt-0.5 flex-shrink-0"
                         fill="none"
-                        stroke={plan.popular ? BRAND_GOLD : BRAND_COLOR}
+                        stroke={plan.popular ? BRAND_GOLD : BRAND_TEAL}
                         viewBox="0 0 24 24"
                         aria-hidden="true"
                       >
@@ -145,7 +145,7 @@ export default function PricingPage() {
       </section>
 
       {/* FAQ */}
-      <section className="py-16" style={{ background: "linear-gradient(180deg, #faf8f5 0%, #f5f2ed 100%)" }} aria-label="الأسئلة الشائعة">
+      <section className="py-16" style={{ background: "linear-gradient(135deg, #F3F4F6 0%, #E8F4FD 100%)" }} aria-label="الأسئلة الشائعة">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 text-center mb-12">
             الأسئلة الشائعة
@@ -175,7 +175,8 @@ export default function PricingPage() {
             ].map((faq, index) => (
               <div
                 key={index}
-                className="bg-white rounded-xl p-6 shadow-sm border border-gray-100"
+                className="bg-white p-6 border border-gray-100"
+                style={{ borderRadius: "12px", boxShadow: "0 4px 6px rgba(10, 38, 71, 0.1)" }}
               >
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
                   {faq.q}

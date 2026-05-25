@@ -100,7 +100,7 @@ export default function TaxCalculator() {
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder={taxType === "vat" ? "أدخل المبلغ" : "أدخل صافي الأرباح"}
-            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-lg focus:border-[#1e3a5f] focus:outline-none transition-colors"
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-lg focus:border-[#0A2647] focus:outline-none transition-colors"
             dir="ltr"
             min="0"
             step="0.01"
@@ -115,7 +115,7 @@ export default function TaxCalculator() {
                 type="checkbox"
                 checked={isInclusive}
                 onChange={(e) => setIsInclusive(e.target.checked)}
-                className="w-5 h-5 rounded border-gray-300 text-[#1e3a5f] focus:ring-[#1e3a5f]"
+                className="w-5 h-5 rounded border-gray-300 text-[#0A2647] focus:ring-[#0A2647]"
               />
               <span className="text-sm text-gray-700">
                 المبلغ شامل الضريبة

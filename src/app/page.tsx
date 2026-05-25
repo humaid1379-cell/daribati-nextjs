@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { SITE_URL, SITE_DESCRIPTION_AR, BRAND_COLOR, BRAND_GOLD } from "@/lib/constants";
+import { SITE_URL, SITE_DESCRIPTION_AR, BRAND_COLOR, BRAND_TEAL } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: "ضريبتي — Daribati | منصة الضرائب والفوترة في الإمارات",
@@ -87,7 +87,9 @@ export default function HomePage() {
   return (
     <>
       {/* Hero Section */}
-      <section className="relative overflow-hidden" style={{ backgroundColor: BRAND_COLOR }}>
+      <section className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0A2647 0%, #0E918C 100%)" }}>
+        {/* Islamic geometric pattern overlay */}
+        <div className="absolute inset-0 islamic-pattern" />
         <div className="absolute inset-0 opacity-10">
           <div className="absolute inset-0" style={{
             backgroundImage: "radial-gradient(circle at 25% 25%, rgba(255,255,255,0.2) 0%, transparent 50%), radial-gradient(circle at 75% 75%, rgba(255,255,255,0.15) 0%, transparent 50%)",
@@ -98,16 +100,16 @@ export default function HomePage() {
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
               منصة الضرائب والفوترة
               <br />
-              <span style={{ color: "#e8c94a" }}>المتكاملة في الإمارات</span>
+              <span style={{ color: "#D4A853" }}>المتكاملة في الإمارات</span>
             </h1>
-            <p className="text-lg sm:text-xl text-blue-100 max-w-2xl mx-auto mb-10 leading-relaxed">
+            <p className="text-lg sm:text-xl max-w-2xl mx-auto mb-10 leading-relaxed" style={{ color: "rgba(255,255,255,0.85)" }}>
               أتمتة الامتثال لضريبة القيمة المضافة وضريبة الشركات مع فواتير
               متوافقة مع الهيئة الاتحادية للضرائب ولوحة تحكم عربية أولاً.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href="/pricing"
-                className="px-8 py-4 bg-white rounded-xl text-lg font-bold transition-all hover:bg-blue-50 hover:scale-105"
+                className="px-8 py-4 bg-white rounded-xl text-lg font-bold transition-all hover:bg-gray-50 hover:scale-105"
                 style={{ color: BRAND_COLOR }}
               >
                 جرّب مجاناً لمدة 14 يوماً
@@ -125,13 +127,13 @@ export default function HomePage() {
 
       {/* Stats Section */}
       <section className="bg-white border-b border-gray-100" aria-label="إحصائيات">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
               <div key={index} className="text-center">
                 <div
                   className="text-3xl sm:text-4xl font-bold mb-2"
-                  style={{ color: BRAND_COLOR }}
+                  style={{ color: BRAND_TEAL }}
                 >
                   {stat.value}
                 </div>
@@ -143,33 +145,34 @@ export default function HomePage() {
       </section>
 
       {/* Features Section */}
-      <section className="py-20" style={{ background: "linear-gradient(180deg, #faf8f5 0%, #f5f2ed 100%)" }} aria-label="مميزات المنصة">
+      <section className="py-section" style={{ background: "linear-gradient(135deg, #F3F4F6 0%, #E8F4FD 100%)" }} aria-label="مميزات المنصة">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4" style={{ color: "#1A1A2E" }}>
               كل ما تحتاجه لإدارة ضرائبك
             </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            <p className="text-lg max-w-2xl mx-auto" style={{ color: "#6B7280" }}>
               منصة متكاملة تجمع بين إدارة الضرائب والفوترة والتقارير المالية في
               مكان واحد.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((feature, index) => (
               <div
                 key={index}
-                className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 card-hover"
+                className="bg-white p-8 border border-gray-100 card-hover"
+                style={{ borderRadius: "12px", boxShadow: "0 4px 6px rgba(10, 38, 71, 0.1)" }}
               >
                 <div
                   className="w-14 h-14 rounded-xl flex items-center justify-center mb-5"
-                  style={{ backgroundColor: "#f0ead6", color: BRAND_COLOR }}
+                  style={{ backgroundColor: "rgba(14, 145, 140, 0.1)", color: BRAND_TEAL }}
                 >
                   {feature.icon}
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-3">
+                <h3 className="text-xl font-bold mb-3" style={{ color: "#1A1A2E" }}>
                   {feature.titleAr}
                 </h3>
-                <p className="text-gray-600 leading-relaxed">{feature.descAr}</p>
+                <p className="leading-relaxed" style={{ color: "#6B7280" }}>{feature.descAr}</p>
               </div>
             ))}
           </div>
@@ -177,13 +180,13 @@ export default function HomePage() {
       </section>
 
       {/* How It Works */}
-      <section className="bg-white py-20" aria-label="كيف يعمل">
+      <section className="bg-white py-section" aria-label="كيف يعمل">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4" style={{ color: "#1A1A2E" }}>
               كيف يعمل ضريبتي؟
             </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            <p className="text-lg max-w-2xl mx-auto" style={{ color: "#6B7280" }}>
               ثلاث خطوات بسيطة للبدء في إدارة ضرائبك بكفاءة.
             </p>
           </div>
@@ -208,14 +211,14 @@ export default function HomePage() {
               <div key={item.step} className="text-center">
                 <div
                   className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-white mx-auto mb-5"
-                  style={{ background: `linear-gradient(135deg, ${BRAND_COLOR} 0%, #4a90d9 100%)` }}
+                  style={{ background: "linear-gradient(135deg, #0A2647 0%, #0E918C 100%)" }}
                 >
                   {item.step}
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-3">
+                <h3 className="text-xl font-bold mb-3" style={{ color: "#1A1A2E" }}>
                   {item.titleAr}
                 </h3>
-                <p className="text-gray-600">{item.descAr}</p>
+                <p style={{ color: "#6B7280" }}>{item.descAr}</p>
               </div>
             ))}
           </div>
@@ -224,26 +227,27 @@ export default function HomePage() {
 
       {/* CTA Section */}
       <section
-        className="py-20"
+        className="py-section relative overflow-hidden"
         style={{
-          background: `linear-gradient(135deg, ${BRAND_COLOR} 0%, #2a5a8f 100%)`,
+          background: "linear-gradient(135deg, #0A2647 0%, #0E918C 100%)",
         }}
       >
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div className="absolute inset-0 islamic-pattern" />
+        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl sm:text-4xl font-bold text-white mb-6">
             ابدأ إدارة ضرائبك بذكاء اليوم
           </h2>
-          <p className="text-lg text-blue-100 mb-10 max-w-2xl mx-auto">
+          <p className="text-lg mb-10 max-w-2xl mx-auto" style={{ color: "rgba(255,255,255,0.85)" }}>
             منصة مصممة خصيصاً للشركات في الإمارات لإدارة
             الامتثال الضريبي بكفاءة. جرّب مجاناً لمدة 14 يوماً.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/pricing"
-              className="px-8 py-4 rounded-xl text-lg font-bold transition-all hover:scale-105"
-                style={{ backgroundColor: BRAND_GOLD, color: "#ffffff" }}
-              >
-                اختر باقتك وابدأ التجربة
+              className="px-8 py-4 rounded-xl text-lg font-bold transition-all hover:scale-105 text-white"
+              style={{ backgroundColor: "#D4A853" }}
+            >
+              اختر باقتك وابدأ التجربة
             </Link>
             <Link
               href="/calculator"

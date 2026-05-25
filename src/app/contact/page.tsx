@@ -57,7 +57,7 @@ export default function ContactPage() {
       <section
         className="py-20"
         style={{
-          background: `linear-gradient(135deg, ${BRAND_COLOR} 0%, #2a5a8f 100%)`,
+          background: `linear-gradient(135deg, #0A2647 0%, #0E918C 100%)`,
         }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -73,7 +73,7 @@ export default function ContactPage() {
       {/* Contact Content */}
       <section
         className="py-20"
-        style={{ background: "linear-gradient(135deg, #faf8f5 0%, #f5f2ed 100%)" }}
+        style={{ background: "linear-gradient(135deg, #F3F4F6 0%, #E8F4FD 100%)" }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
@@ -87,7 +87,7 @@ export default function ContactPage() {
                 <div className="flex items-start gap-4">
                   <div
                     className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ backgroundColor: "#f0ead6", color: BRAND_COLOR }}
+                    style={{ backgroundColor: "rgba(14, 145, 140, 0.1)", color: "#0E918C" }}
                   >
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -98,7 +98,7 @@ export default function ContactPage() {
                     <a
                       href="mailto:admin@daribati.ae"
                       className="text-gray-600 hover:underline"
-                      style={{ color: BRAND_COLOR }}
+                      style={{ color: "#0E918C" }}
                     >
                       admin@daribati.ae
                     </a>
@@ -109,7 +109,7 @@ export default function ContactPage() {
                 <div className="flex items-start gap-4">
                   <div
                     className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ backgroundColor: "#f0ead6", color: BRAND_COLOR }}
+                    style={{ backgroundColor: "rgba(14, 145, 140, 0.1)", color: "#0E918C" }}
                   >
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -126,7 +126,7 @@ export default function ContactPage() {
                 <div className="flex items-start gap-4">
                   <div
                     className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ backgroundColor: "#f0ead6", color: BRAND_COLOR }}
+                    style={{ backgroundColor: "rgba(14, 145, 140, 0.1)", color: "#0E918C" }}
                   >
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -143,7 +143,7 @@ export default function ContactPage() {
                 <div className="flex items-start gap-4">
                   <div
                     className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ backgroundColor: "#f0ead6", color: BRAND_COLOR }}
+                    style={{ backgroundColor: "rgba(14, 145, 140, 0.1)", color: "#0E918C" }}
                   >
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />

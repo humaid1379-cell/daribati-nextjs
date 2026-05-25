@@ -67,7 +67,7 @@ export default async function DashboardPage() {
         <div
           className="rounded-2xl p-6 mb-8 text-white"
           style={{
-            background: `linear-gradient(135deg, ${BRAND_COLOR} 0%, #2a5a8f 100%)`,
+            background: `linear-gradient(135deg, ${BRAND_COLOR} 0%, #0E918C 100%)`,
           }}
         >
           <h1 className="text-2xl font-bold mb-1">

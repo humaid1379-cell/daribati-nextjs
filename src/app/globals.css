@@ -3,17 +3,23 @@
 @tailwind utilities;
 
 :root {
-  --brand-primary: #1e3a5f;
-  --brand-primary-light: #2a5a8f;
-  --brand-primary-dark: #152a45;
-  --brand-accent: #3b82f6;
-  --brand-gold: #c9a227;
-  --brand-gold-light: #d4b44a;
-  --brand-blue-secondary: #4a90d9;
+  --brand-primary: #0A2647;
+  --brand-primary-light: #48A9E6;
+  --brand-primary-dark: #0A2647;
+  --brand-accent: #0E918C;
+  --brand-teal: #0E918C;
+  --brand-gold: #D4A853;
+  --brand-gold-light: #B8860B;
+  --brand-coral: #E8735A;
+  --brand-sky-blue: #48A9E6;
+  --brand-blue-secondary: #48A9E6;
+  --brand-charcoal: #1A1A2E;
   --brand-success: #10b981;
   --brand-warning: #f59e0b;
-  --bg-warm: #faf8f5;
-  --bg-warm-alt: #f5f2ed;
+  --bg-warm: #F3F4F6;
+  --bg-warm-alt: #E8F4FD;
+  --gray-medium: #6B7280;
+  --gray-light: #F3F4F6;
 }
 
 /* Accessibility: Skip Link */
@@ -63,7 +69,7 @@ html {
 
 /* Selection Color */
 ::selection {
-  background-color: rgba(30, 58, 95, 0.2);
+  background-color: rgba(10, 38, 71, 0.2);
 }
 
 /* Focus Visible Styles */
@@ -74,15 +80,19 @@ html {
 
 /* Gradient Background Utility */
 .bg-brand-gradient {
-  background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary-light) 100%);
+  background: linear-gradient(135deg, #0A2647 0%, #0E918C 100%);
 }
 
 .bg-brand-gradient-subtle {
-  background: linear-gradient(135deg, #faf8f5 0%, #f0f4f8 100%);
+  background: linear-gradient(135deg, #F3F4F6 0%, #E8F4FD 100%);
 }
 
 .bg-brand-gradient-gold {
-  background: linear-gradient(135deg, var(--brand-primary) 0%, #2a4a6f 50%, var(--brand-primary-light) 100%);
+  background: linear-gradient(135deg, #D4A853 0%, #B8860B 100%);
+}
+
+.bg-brand-gradient-hero {
+  background: linear-gradient(135deg, #0A2647 0%, #0E918C 100%);
 }
 
 /* Warm background utility */
@@ -109,5 +119,58 @@ html {
 }
 
 .card-hover:hover {
-  @apply -translate-y-1 shadow-xl;
+  @apply -translate-y-1;
+  box-shadow: 0 12px 24px rgba(10, 38, 71, 0.15);
+}
+
+/* Islamic geometric pattern for hero backgrounds */
+.islamic-pattern {
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M30 0L60 30L30 60L0 30z M30 10L50 30L30 50L10 30z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Modern dot-grid pattern */
+.dot-grid-pattern {
+  background-image: radial-gradient(circle, rgba(14, 145, 140, 0.1) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Brand card styling */
+.brand-card {
+  @apply bg-white p-6 border border-gray-100;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(10, 38, 71, 0.1);
+  transition: all 0.3s ease;
+}
+.brand-card:hover {
+  @apply -translate-y-1;
+  box-shadow: 0 12px 24px rgba(10, 38, 71, 0.15);
+}
+
+/* Brand button styles */
+.btn-primary {
+  @apply px-6 py-3 font-semibold text-white transition-all;
+  background-color: #0A2647;
+  border-radius: 8px;
+}
+.btn-primary:hover {
+  background-color: #0d3058;
+  transform: translateY(-1px);
+}
+.btn-secondary {
+  @apply px-6 py-3 font-semibold transition-all border-2;
+  border-color: #0E918C;
+  color: #0E918C;
+  border-radius: 8px;
+}
+.btn-secondary:hover {
+  background-color: rgba(14, 145, 140, 0.05);
+}
+.btn-cta {
+  @apply px-6 py-3 font-bold text-white transition-all;
+  background-color: #D4A853;
+  border-radius: 8px;
+}
+.btn-cta:hover {
+  background-color: #B8860B;
+  transform: translateY(-1px);
 }

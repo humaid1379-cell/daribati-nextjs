@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { SITE_URL, BRAND_COLOR } from "@/lib/constants";
+import { SITE_URL } from "@/lib/constants";
 import { getWebPageJsonLd } from "@/lib/jsonld";
 
 export const metadata: Metadata = {
@@ -107,7 +107,7 @@ export default function CompliancePage() {
       />
 
       {/* Hero */}
-      <section className="py-16 lg:py-20" style={{ background: "linear-gradient(135deg, #faf8f5 0%, #f0f4f8 100%)" }}>
+      <section className="py-16 lg:py-20" style={{ background: "linear-gradient(135deg, #F3F4F6 0%, #E8F4FD 100%)" }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
             دليل الامتثال الضريبي
@@ -141,8 +141,8 @@ export default function CompliancePage() {
                   <div
                     className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0"
                     style={{
-                      backgroundColor: `${BRAND_COLOR}10`,
-                      color: BRAND_COLOR,
+                      backgroundColor: "rgba(14, 145, 140, 0.1)",
+                      color: "#0E918C",
                     }}
                   >
                     {topic.icon}
@@ -166,7 +166,7 @@ export default function CompliancePage() {
                         <svg
                           className="w-5 h-5 mt-0.5 flex-shrink-0"
                           fill="none"
-                          stroke={BRAND_COLOR}
+                          stroke="#0E918C"
                           viewBox="0 0 24 24"
                           aria-hidden="true"
                         >
@@ -192,7 +192,7 @@ export default function CompliancePage() {
       <section
         className="py-16"
         style={{
-          background: `linear-gradient(135deg, ${BRAND_COLOR} 0%, #2a5a8f 100%)`,
+          background: `linear-gradient(135deg, #0A2647 0%, #0E918C 100%)`,
         }}
       >
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -207,7 +207,7 @@ export default function CompliancePage() {
             <Link
               href="/pricing"
               className="px-8 py-4 bg-white rounded-xl text-lg font-bold transition-all hover:bg-blue-50"
-              style={{ color: BRAND_COLOR }}
+              style={{ color: "#0E918C" }}
             >
               اطّلع على الباقات
             </Link>

@@ -46,8 +46,8 @@ export default function Header({
                 href={link.href}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   pathname === link.href
-                    ? "bg-[#1e3a5f]/10 text-[#1e3a5f]"
-                    : "text-gray-600 hover:text-[#1e3a5f] hover:bg-gray-50"
+                    ? "bg-[#0A2647]/10 text-[#0A2647]"
+                    : "text-gray-600 hover:text-[#0A2647] hover:bg-gray-50"
                 }`}
               >
                 {link.labelAr}
@@ -112,8 +112,8 @@ export default function Header({
                   href={link.href}
                   className={`px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                     pathname === link.href
-                      ? "bg-[#1e3a5f]/10 text-[#1e3a5f]"
-                      : "text-gray-600 hover:text-[#1e3a5f] hover:bg-gray-50"
+                      ? "bg-[#0A2647]/10 text-[#0A2647]"
+                      : "text-gray-600 hover:text-[#0A2647] hover:bg-gray-50"
                   }`}
                   onClick={() => setMobileMenuOpen(false)}
                 >

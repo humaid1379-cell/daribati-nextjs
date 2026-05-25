@@ -31,7 +31,7 @@ export default function GlobalError({
             <button
               onClick={reset}
               className="px-6 py-3 rounded-lg text-white font-semibold transition-all hover:opacity-90"
-              style={{ backgroundColor: "#1e3a5f" }}
+              style={{ backgroundColor: "#0A2647" }}
             >
               حاول مرة أخرى
             </button>

@@ -1,7 +1,7 @@
 export const runtime = 'edge';
 
 import type { Metadata, Viewport } from "next";
-import { IBM_Plex_Sans_Arabic } from "next/font/google";
+import { IBM_Plex_Sans_Arabic, Inter } from "next/font/google";
 import "./globals.css";
 import { SITE_TITLE, SITE_DESCRIPTION_AR, SITE_URL, BRAND_COLOR } from "@/lib/constants";
 import { getSoftwareApplicationJsonLd, getOrganizationJsonLd } from "@/lib/jsonld";
@@ -15,6 +15,13 @@ const ibmPlexSansArabic = IBM_Plex_Sans_Arabic({
   weight: ["300", "400", "500", "600", "700"],
   display: "swap",
   variable: "--font-ibm-plex-arabic",
+});
+
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+  variable: "--font-inter",
 });
 
 export const viewport: Viewport = {
@@ -77,7 +84,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ar" dir="rtl" className={ibmPlexSansArabic.variable}>
+    <html lang="ar" dir="rtl" className={`${ibmPlexSansArabic.variable} ${inter.variable}`}>
       <head>
         <script
           type="application/ld+json"

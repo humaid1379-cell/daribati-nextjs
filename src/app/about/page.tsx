@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { SITE_URL, BRAND_COLOR, BRAND_GOLD } from "@/lib/constants";
+import { SITE_URL, BRAND_GOLD } from "@/lib/constants";
 import { getWebPageJsonLd } from "@/lib/jsonld";
 
 export const runtime = "edge";
@@ -40,7 +40,7 @@ export default function AboutPage() {
       <section
         className="py-20"
         style={{
-          background: `linear-gradient(135deg, ${BRAND_COLOR} 0%, #2a5a8f 100%)`,
+          background: `linear-gradient(135deg, #0A2647 0%, #0E918C 100%)`,
         }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -57,7 +57,7 @@ export default function AboutPage() {
       {/* Mission Section */}
       <section
         className="py-20"
-        style={{ background: "linear-gradient(135deg, #faf8f5 0%, #f5f2ed 100%)" }}
+        style={{ background: "linear-gradient(135deg, #F3F4F6 0%, #E8F4FD 100%)" }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -151,7 +151,7 @@ export default function AboutPage() {
               >
                 <div
                   className="w-14 h-14 rounded-xl flex items-center justify-center mb-5"
-                  style={{ backgroundColor: "#f0ead6", color: BRAND_COLOR }}
+                  style={{ backgroundColor: "rgba(14, 145, 140, 0.1)", color: "#0E918C" }}
                 >
                   {value.icon}
                 </div>
@@ -171,7 +171,7 @@ export default function AboutPage() {
       <section
         className="py-20"
         style={{
-          background: `linear-gradient(135deg, ${BRAND_COLOR} 0%, #2a5a8f 100%)`,
+          background: `linear-gradient(135deg, #0A2647 0%, #0E918C 100%)`,
         }}
       >
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">

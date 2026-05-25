@@ -1,16 +1,20 @@
 import Link from "next/link";
-import { BRAND_COLOR } from "@/lib/constants";
+// Brand colors are now defined inline
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
     <footer
-      className="footer-section"
-      style={{ backgroundColor: BRAND_COLOR }}
+      className="footer-section relative overflow-hidden"
+      style={{ background: "linear-gradient(135deg, #0A2647 0%, #1A1A2E 100%)" }}
       role="contentinfo"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      {/* Subtle diagonal lines pattern */}
+      <div className="absolute inset-0 opacity-[0.03]" style={{
+        backgroundImage: "repeating-linear-gradient(45deg, transparent, transparent 10px, #ffffff 10px, #ffffff 11px)",
+      }} />
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="md:col-span-1">
